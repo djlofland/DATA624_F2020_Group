@@ -195,6 +195,8 @@ Please submit both RPubs links and .rmd files or other readable formats for tech
 
 *Insert short overview of what the data contains and what we are trying to accomplish by building a model.  Discuss our overall approach and what models might be appropriate.*
 
+Our team's analysis seeks to build understanding of the ABC Beverage manufacturing process and the related factors that affect the pH of the company's beverage products. We apply machine learning approaches--specifically, a series of supervised learning algorithms--to company data to build then select a predictive model of pH. This model could help the company adapt its processes in a changing regulatory environment.
+
 ## 1. Data Exploration
 
 *Describe the size and the variables in the training data set. Consider that too much detail will cause a manager to lose interest while too little detail will make the manager consider that you aren’t doing your job. Some suggestions are given below.*
