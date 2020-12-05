@@ -2,7 +2,7 @@
 title: 'DS 624 Fall2020: Project 2'
 subtitle: 'ABC Beverage - pH Analysis'
 author: 'Donny Lofland, Dennis Pong, Charlie Rosemond'
-data: '11/15/2020'
+date: '12/13/2020'
 output:
   html_document:  
     theme: cerulean
@@ -352,7 +352,7 @@ Lastly, several features have relatively normal distributions along with high nu
 
 ### Boxplots
 
-In addition to creating histogram distributions, we also elected to use box-plots to get an idea of the spread of each variable. 
+We also elected to use boxplots to understand the spread of each feature.  
 
 ```{r, fig.height = 10, fig.width = 10, echo=FALSE}
 # Prepare data for ggplot
@@ -367,11 +367,11 @@ gather_df %>% ggplot() +
   facet_wrap(. ~variable, scales='free', ncol=6)
 ```
 
-The box-plots reveal outliers, however, none of them seem egregious enough to warrant imputing or removal.  Outliers should only be dropped or imputed if we have reason to believe they are errant or contain no critical information.
+The boxplots reveal outliers, though none of them seem egregious enough to warrant imputing or removal. Outliers should only be imputed or dropped if we have reason to believe they are errant or contain no critical information.
 
 ### Variable Plots
 
-Finally, we generate scatter plots of each variable versus the target variable to get an idea of the relationship between them. 
+Next, we generate scatter plots of each predictor versus the target to get an idea of the relationship between them. 
 
 ```{r, fig.height = 10, fig.width = 10, echo=FALSE}
 df_features <- df %>% 
@@ -404,13 +404,11 @@ for (i in 0:batches) {
 }
 ```
 
-The plots indicate some clear relationships between our target and features, such as `PH` & `Oxygen Filter` or `PH` & `Alch Rel`.  However, we also see clear correlations between some of the features, for example `Carb Temp` & `Carb Pressure`.  Overall, although our plots indicate some interesting relationships between our variables, they also reveal some significant issues with the data. 
-
-For instance, most of the predictor variables are skewed or non-normally distributed, and will need to be transformed. It also appears we have some missing data encoded as 0.  
+The scatter plots indicate some clear relationships between our target and predictor features, such as `PH` and `Oxygen Filter` or `PH` and `Alch Rel`. However, we also see clear correlations between some of the predictors, like `Carb Temp` and `Carb Pressure`. Overall, although our plots indicate some interesting relationships, they also underline the aforementioned possible issues with the data. For instance, many predictors have skewed distributions, and in some cases, missing data may be recorded as '0'.
 
 ### Feature-Target Correlations
 
-With our outliers data imputed correctly, we can now build plots to quantify the correlations between our target variable and predictor variable. We will want to choose those with stronger positive or negative correlations.  Features with correlations closer to zero will probably not provide any meaningful information on explaining crime patterns.
+We next quantify the relationships visualized above. In general, our model should focus on features showing stronger positive or negative correlations with `PH`. Features with correlations closer to zero will probably not provide any meaningful information on pH levels.
 
 ```{r echo=FALSE}
 # Show feature correlations/target by decreasing correlation
@@ -418,7 +416,7 @@ stack(sort(cor(df_features[, feature_count + 1], df_features[,1:feature_count])[
            decreasing=TRUE))
 ```
 
-It appears that `Bowl Setpoint`, `Filler Level`, `Carb Flow`, `Pressure Vacuum`, and `Carb Rel` have the highest correlation (positive) with `PH`, while `Mnf Flow`, `Usage cont`, `Fill Pressure`, `Pressure Setpoint`, and `Hyd Pressure3` have the strongest negative correlation with `PH`.  The other variables have a weak or slightly negative correlation, which implies they have less predictive power.
+It appears that `Bowl Setpoint`, `Filler Level`, `Carb Flow`, `Pressure Vacuum`, and `Carb Rel` have the highest correlations (positive) with `PH`, while `Mnf Flow`, `Usage cont`, `Fill Pressure`, `Pressure Setpoint`, and `Hyd Pressure3` have the strongest negative correlations with `PH`.  The other features have a weak or slightly negative correlation, which implies they have less predictive power.
 
 ### Multicollinearity
 
