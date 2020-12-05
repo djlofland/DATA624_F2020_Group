@@ -203,7 +203,7 @@ Our team's analysis seeks to build understanding of the ABC Beverage manufacturi
 
 ### Dataset
 
-The dataset contains categorical, continuous and discrete features.  The data contains 32 features and 2571 instances, with 267 instances reserved for an evaluation dataset with targets removed.  The target column is `PH`.  While `PH` should be a continuous variable, of note, there are 52 distinct values (over the 2400+ rows).  Given this, possible models could include both regression and classification, or an ensemble of both.  
+The training data set contains 32 categorical, continuous, or discrete features and 2571 rows, with 267 rows reserved for an evaluation set that lacks the target. That target is `PH`, which should be a continuous variable but has 52 distinct values in the training set. As a result, possible predictive models could include regression, classification, or an ensemble of both.  
 
 There are two files provided:
 
