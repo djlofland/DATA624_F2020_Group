@@ -323,7 +323,7 @@ The distribution profiles show the prevalence of kurtosis, specifically right sk
 
 Bimodal features in a dataset are problematic but interesting, representing areas of potential opportunity and exploration. They suggest the existence of two different groups, or classes, within a given feature. These groups may have separate but overlapping distributions that could provide powerful predictive power in a model.
 
-Were we tackling feature engineering in this analysis, we could leverage the package, `mixtools` (see R Vignette). This package helps regress *mixed models* where data can be subdivided into subgroups. We could then add new binary features to indicate for each instance, the distribution to which it belongs.
+Were we tackling in-depth feature engineering in this analysis, we could leverage the package, `mixtools` (see R Vignette). This package helps regress *mixed models* where data can be subdivided into subgroups. We could then add new binary features to indicate for each instance, the distribution to which it belongs.
 
 Here is a quick example showing a possible mix within `Air Pressurer`:
 
@@ -348,7 +348,7 @@ plot(air_pressure_mix,
      xlab2 = "Air Pressurer")
 ```
 
-Lastly, several features have both a distribution along with a high number of values at an extreme. However, based on the feature meanings and provided information, we have no information on whether these extreme values are mistakes, data errors, or otherwise inexplicable. As such, we will need to review each and to determine whether to impute, leave as-is, or apply feature engineering.
+Lastly, several features have relatively normal distributions along with high numbers of values at an extreme. We have no information on whether these extreme values are mistakes, data errors, or otherwise inexplicable. As such, we will need to review each associated feature to determine whether to impute the values, leave them as is, or apply feature engineering.
 
 ### Boxplots
 
