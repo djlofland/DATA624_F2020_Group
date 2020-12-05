@@ -207,10 +207,10 @@ The training data set contains 32 categorical, continuous, or discrete features 
 
 There are two files provided:
 
-* **StudentData.xlsx** - dataset we will use to train our model.  Note the `PH` column will be our target we are trying to predict.
-* **StudentEvaluation.xlsx** - holdout data used for evaluation.  Note the `PH` column is empty in this dataset - our model will have to be scored by an outside group with knowledge of the actual PH Values.
+* **StudentData.xlsx** - The data set we use to train our model. It contains `PH`, the feature we seek to predict.
+* **StudentEvaluation.xlsx** - The data set we use to evaluate our model. It lacks `PH`. Our model will have to be scored by an outside group with knowledge of the actual pH values.
 
-*Note: Both files are simple CSV format.*
+*Note: Both Excel files are in simple CSV format.*
 
 ```{r load_data}
 # Load crime dataset
