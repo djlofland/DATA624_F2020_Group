@@ -303,7 +303,7 @@ Notice that approximately 8.25 percent of the rows are missing a value for `MFR`
 
 ### Distributions
 
-Next, we visualize the distribution profiles for each of the predictor variables. This will help us to make a plan on which variables to include, how they might be related to each other or `PH`, and finally identify outliers or transformations that might help improve model resolution.
+Next, we visualize the distributions of each of the predictor features. The visuals will help us select features for modeling, assess relationships between features and with `PH`, and identify outliers as well as transformations that might improve model resolution.
 
 ```{r, fig.height = 10, fig.width = 10, echo=FALSE}
 # Prepare data for ggplot
@@ -319,11 +319,11 @@ ggplot(gather_df) +
   facet_wrap(. ~variable, scales='free', ncol=4)
 ```
 
-The distribution profiles show the prevalence of kurtosis, specifically right skew in variables `Oxygen Filler`, `PSC`, and `Temperature` and left skew in `Filler Speed` and `MFR`. These deviations from a traditional normal distribution can be problematic for linear regression assumptions, and thus we might need to transform the data.  Several features are discrete with limited possible values, e.g. `Pressure Setpoint`.  Furthermore, we have a number of bimodel features, see `Air Pressurer`, `Balling`, and `Balling Level`. Bimodal features in a dataset are both problematic and interesting and potentially an area of opportunity and exploration.  Bimodal data suggests that there are possibly two different groups or classes within the feature.
+The distribution profiles show the prevalence of kurtosis, specifically right skew in variables `Oxygen Filler`, `PSC`, and `Temperature` and left skew in `Filler Speed` and `MFR`. These deviations from a traditional normal distribution can be problematic for linear regression assumptions, and thus we might need to transform the data. Several features are discrete with limited possible values, e.g. `Pressure Setpoint`. Furthermore, we have a number of bimodel features--see `Air Pressurer`, `Balling`, and `Balling Level`.
 
-Bimodal features are extremely interesting in classification tasks, as they could indicate overlapping but separate distributions for each class, which could provide powerful predictive power in a model.
+Bimodal features in a dataset are problematic but interesting, representing areas of potential opportunity and exploration. They suggest the existence of two different groups, or classes, within a given feature. These groups may have separate but overlapping distributions that could provide powerful predictive power in a model.
 
-While we don't tackle feature engineering in this analysis, if we were performing a more in-depth analysis, we could leverage the package, `mixtools` (see R Vignette).  This package helps regress *mixed models* where data can be subdivided into subgroups. We could then add new binary features to indicate for each instance, which distribution it belongs.
+Were we tackling feature engineering in this analysis, we could leverage the package, `mixtools` (see R Vignette). This package helps regress *mixed models* where data can be subdivided into subgroups. We could then add new binary features to indicate for each instance, the distribution to which it belongs.
 
 Here is a quick example showing a possible mix within `Air Pressurer`:
 
