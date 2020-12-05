@@ -270,15 +270,13 @@ First, across features, there are numerous missing data--coded as NA--that will 
 
 ### Check Target Class Bias
 
-If we treat `PH` as a classification problem, we need to understand any class imbalance, as this may impact predicted classification.
-
-Our class balance is:
+If we treat `PH` as a classification problem, we need to understand any class imbalance, as this may impact predicted classification. Our class balance is:
 
 ```{r}
 hist(df$PH)
 ```
 
-`PH` is normally distributed with some possible outliers on the low and high ends.  Given this distribution, a pure classification approach may be problematic as the predictions may favor pH's in the mid-range (since we have more data points).  That said, it's still possible there are boundaries such that classification adds predictive information.  Give the normal shape, a regression or possibly an ensemble with regression and classification might be more appropriate.  
+`PH` is normally distributed with possible outliers on the low and high ends. This distribution suggests a pure classification approach could be problematic as the predictions may favor pH values in the mid-range (where there are more data points). Natural boundaries may exist such that classification adds predictive information. However, given the normal shape, a regression or possible ensemble with regression and classification seems more appropriate.  
 
 ### Missing Data
 
