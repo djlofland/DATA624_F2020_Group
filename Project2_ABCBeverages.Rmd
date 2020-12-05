@@ -266,9 +266,7 @@ We compiled summary statistics on our dataset to better understand the data befo
 skim(df)
 ```
 
-The first observation is that we have quite a few missing data points across our features (coded as NA's) that we will want to impute. Especially note that 4 rows are missing their `PH` value.  We will need to drop these rows as they cannot be used for training.
-
-Based on the summary statistics, it appears we have some highly skewed features with means that are far from the median indicating a skewed distribution. Some examples include the variables ... . We also see a several variables that appears to be quite imbalanced with a large number of 0 values, e.g. `Hyd Pressure1` and `Hyd Pressure2`.  We might need to impute these.
+First, across features, there are numerous missing data--coded as NA--that will need to be imputed. Especially note that 4 rows are missing a `PH` value. We will need to drop these rows as they cannot be used for training. Second, the basic histograms suggest that skewness is prevalent across features. Examples include `PSC CO2` and `MFR`. And third, some of the skewed features appear to show near-zero variance, with a large number of 0 or even negative values, e.g. `Hyd Pressure1` and `Hyd Pressure2`. In general, the skewness and imbalance may require imputation.
 
 ### Check Target Class Bias
 
