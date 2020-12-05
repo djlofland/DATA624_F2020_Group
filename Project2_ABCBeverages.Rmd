@@ -1,6 +1,6 @@
 ---
 title: 'DS 624 Fall2020: Project 2'
-subtitle: 'ABC Beverae - PH Analysis'
+subtitle: 'ABC Beverage - pH Analysis'
 author: 'Donny Lofland, Dennis Pong, Charlie Rosemond'
 data: '11/15/2020'
 output:
