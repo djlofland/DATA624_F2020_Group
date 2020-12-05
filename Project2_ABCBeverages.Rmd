@@ -280,7 +280,7 @@ hist(df$PH)
 
 ### Missing Data
 
-Before continuing, let's understand any missing data including which features are impacted and any patterns between missing values.
+Before continuing, let us better understand any patterns of missingness across predictor features.
 
 ```{r echo=FALSE} 
 # Identify missing data by Feature and display percent breakout
@@ -299,7 +299,7 @@ gg_miss_var(df)
 gg_miss_upset(df)
 ```
 
-Notice that ~8.25% of the rows are missing the MFR field - we may need to drop this column.  As the percentage of missing values increase, imputing may have negative consequences.  The categorical column `Brand Code` is missing 4.67% of its values.  Since we don't know if this might represent another brand or actual missing data, we will create a new categorical value 'Unknown' and assign NA's to this value.  For the rest of the features, we are only missing a small percentage, so we are probably safe with imputing using a KNN approach.
+Notice that approximately 8.25 percent of the rows are missing a value for `MFR`. We may need to drop this feature considering that, as missingness increases, so do the potential negative consequences of imputation. Additionally, the categorical feature `Brand Code` is missing approximately 4.67 percent of its values. Since we do not know whether these values represent another brand or are actually missing, we will create a new feature category 'Unknown' consisting of missing values. The rest of the features are only missing small percentages of values, suggesting that KNN imputation should be safe.
 
 ### Distributions
 
