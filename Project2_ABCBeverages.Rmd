@@ -323,7 +323,7 @@ ggplot(gather_df) +
   facet_wrap(. ~variable, scales='free', ncol=4)
 ```
 
-The distribution profiles show the prevalence of kurtosis, specifically right skew in variables `Oxygen Filler`, ..., and left skew in `Filler Speed`, ... . These deviations from a traditional normal distribution can be problematic for linear regression assumptions, and thus we might need to transform the data.  Several features are discrete with limited possible values, e.g. `Pressure Setpoint`.  Furthermore, we have a number of bimodel features, see `Air Pressurer`, `Balling`, and `Balling Level`. Bimodal features in a dataset are both problematic and interesting and potentially an area of opportunity and exploration.  Bimodal data suggests that there are possibly two different groups or classes within the feature.
+The distribution profiles show the prevalence of kurtosis, specifically right skew in variables `Oxygen Filler`, `PSC`, and `Temperature` and left skew in `Filler Speed` and `MFR`. These deviations from a traditional normal distribution can be problematic for linear regression assumptions, and thus we might need to transform the data.  Several features are discrete with limited possible values, e.g. `Pressure Setpoint`.  Furthermore, we have a number of bimodel features, see `Air Pressurer`, `Balling`, and `Balling Level`. Bimodal features in a dataset are both problematic and interesting and potentially an area of opportunity and exploration.  Bimodal data suggests that there are possibly two different groups or classes within the feature.
 
 Bimodal features are extremely interesting in classification tasks, as they could indicate overlapping but separate distributions for each class, which could provide powerful predictive power in a model.
 
