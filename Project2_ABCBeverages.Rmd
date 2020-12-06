@@ -5,6 +5,7 @@ author: 'Donny Lofland, Dennis Pong, Charlie Rosemond'
 date: '12/13/2020'
 output:
   html_document:  
+    code_folding: hide
     theme: cerulean
     highlight: pygments
     css: ./lab.css
