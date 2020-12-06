@@ -1,0 +1,826 @@
+---
+title: 'DS 624 Fall2020: Project 2'
+subtitle: 'ABC Beverage - pH Analysis'
+author: 'Donny Lofland, Dennis Pong, Charlie Rosemond'
+date: '12/13/2020'
+output:
+  html_document:  
+    theme: cerulean
+    highlight: pygments
+    css: ./lab.css
+    toc: true
+    toc_float: true
+    code_folding: hide
+  pdf_document:
+    extra_dependencies: ["geometry", "multicol", "multirow", "xcolor"]
+---
+
+Source code: <https://github.com/djlofland/DATA624_F2020_Group/tree/master/>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, include=TRUE)
+```
+
+```{r paged.print=FALSE,  include=FALSE}
+
+# TODO: Remove unnecessary libraries once project is done
+
+library(readxl)           # Y Read Excel Data
+
+library(skimr)            # Y alternative to summary()
+library(naniar)           # Y EDA for NA's
+library(VIM)              # Y kNN impute of missing values
+
+library(MASS)
+library(forecast)
+library(caret)
+library(mlbench)
+
+library(rpart.plot)
+library(ggplot2)
+library(ggfortify)
+library(gridExtra)
+library(ggcorrplot)
+library(GGally)
+library(corrplot)
+library(RColorBrewer)
+library(ggpmisc)
+
+library(fpp2)
+library(fma)
+library(kableExtra)
+library(e1071)
+# library(DataExplorer)
+library(timeDate)
+library(mixtools)
+library(tidymodels)
+library(regclass)
+library(pROC)
+
+library(tidyverse)        # TIDY packages
+library(tidyr)
+library(dplyr)
+library(reshape2)
+library(tibble)
+
+#' Print a side-by-side Histogram and QQPlot of Residuals
+#'
+#' @param model A model
+#' @examples
+#' residPlot(myModel)
+#' @return null
+#' @export
+residPlot <- function(model) {
+  # Make sure a model was passed
+  if (is.null(model)) {
+    return
+  }
+  
+  layout(matrix(c(1,1,2,3), 2, 2, byrow = TRUE))
+  plot(residuals(model))
+  hist(model[["residuals"]], freq = FALSE, breaks = "fd", main = "Residual Histogram",
+       xlab = "Residuals",col="lightgreen")
+  lines(density(model[["residuals"]], kernel = "ep"),col="blue", lwd=3)
+  curve(dnorm(x,mean=mean(model[["residuals"]]), sd=sd(model[["residuals"]])), col="red", lwd=3, lty="dotted", add=T)
+  qqnorm(model[["residuals"]], main = "Residual Q-Q plot")
+  qqline(model[["residuals"]],col="red", lwd=3, lty="dotted")
+  par(mfrow = c(1, 1))
+}
+
+#' Print a Variable Importance Plot for the provided model
+#'
+#' @param model The model
+#' @param chart_title The Title to show on the plot
+#' @examples
+#' variableImportancePlot(myLinearModel, 'My Title)
+#' @return null
+#' @export
+variableImportancePlot <- function(model=NULL, chart_title='Variable Importance Plot') {
+  # Make sure a model was passed
+  if (is.null(model)) {
+    return
+  }
+  
+  # use caret and gglot to print a variable importance plot
+  varImp(model) %>% as.data.frame() %>% 
+    ggplot(aes(x = reorder(rownames(.), desc(Overall)), y = Overall)) +
+    geom_col(aes(fill = Overall)) +
+    theme(panel.background = element_blank(),
+          panel.grid = element_blank(),
+          axis.text.x = element_text(angle = 90)) +
+    scale_fill_gradient() +
+    labs(title = chart_title,
+         x = "Parameter",
+         y = "Relative Importance")
+}
+
+
+#' Print a Facet Chart of histograms
+#'
+#' @param df Dataset
+#' @param box Facet size (rows)
+#' @examples
+#' histbox(my_df, 3)
+#' @return null
+#' @export
+histbox <- function(df, box) {
+    par(mfrow = box)
+    ndf <- dimnames(df)[[2]]
+    
+    for (i in seq_along(ndf)) {
+            data <- na.omit(unlist(df[, i]))
+            hist(data, breaks = "fd", main = paste("Histogram of", ndf[i]),
+                 xlab = ndf[i], freq = FALSE)
+            lines(density(data, kernel = "ep"), col = 'red')
+    }
+    
+    par(mfrow = c(1, 1))
+}
+
+#' Extract key performance results from a model
+#'
+#' @param model A linear model of interest
+#' @examples
+#' model_performance_extraction(my_model)
+#' @return data.frame
+#' @export
+model_performance_extraction <- function(model=NULL) {
+  # Make sure a model was passed
+  if (is.null(model)) {
+    return
+  }
+  
+  data.frame("RSE" = model$sigma,
+             "Adj R2" = model$adj.r.squared,
+             "F-Statistic" = model$fstatistic[1])
+}
+
+#' Return a properly rounded Box Cox lambda (-n, ..., -1, -0.5, 0, 1, ..., n)
+#'
+#' @param series A time series
+#' @examples
+#' round_lambda(my_series)
+#' @return new_lambda
+#' @export
+round_lambda <- function(series) {
+  lambda <- BoxCox.lambda(series)
+  
+  if ((lambda > 0.25) & (lambda < 0.75)) {
+    new_lambda <- 0.5
+  } else if ((lambda > -0.75) & (lambda < -0.25)) {
+    new_lambda <- -0.5
+  } else {
+    new_lambda <- round(lambda)
+  }
+
+  print(paste('lambda:', lambda, ',  rounded lambda:', new_lambda))
+  
+  return(new_lambda)
+}
+
+```
+
+## Instructions
+
+### Overview
+
+This is role playing. I am your new boss. I am in charge of production at ABC Beverage and you are a team of data scientists reporting to me. My leadership has told me that new regulations are requiring us to understand our manufacturing process, the predictive factors and be able to report to them our predictive model of PH.
+
+Please use the historical data set I am providing. Build and report the factors in BOTH a technical and non-technical report. I like to use Word and Excel. Please provide your non-technical report in a business friendly readable document and your predictions in an Excel readable format. The technical report should show clearly the models you tested and how you selected your final approach.
+
+### Deliverables
+
+Please submit both RPubs links and .rmd files or other readable formats for technical and non-technical reports. Also submit the excel file showing the prediction of your models for pH.
+
+## Introduction
+
+*Insert short overview of what the data contains and what we are trying to accomplish by building a model. Discuss our overall approach and what models might be appropriate.*
+
+Our team's analysis seeks to build understanding of the ABC Beverage manufacturing process and the related factors that affect the pH of the company's beverage products. We apply machine learning approaches--specifically, a series of supervised learning algorithms--to company data to build then select a predictive model of pH. This model could help the company adapt its processes in a changing regulatory environment.
+
+## 1. Data Exploration
+
+*Describe the size and the variables in the training data set. Consider that too much detail will cause a manager to lose interest while too little detail will make the manager consider that you aren't doing your job. Some suggestions are given below.*
+
+### Dataset
+
+The training data set contains 32 categorical, continuous, or discrete features and 2571 rows, with 267 rows reserved for an evaluation set that lacks the target. That target is `PH`, which should be a continuous variable but has 52 distinct values in the training set. As a result, possible predictive models could include regression, classification, or an ensemble of both.
+
+There are two files provided:
+
+-   **StudentData.xlsx** - The data set we use to train our model. It contains `PH`, the feature we seek to predict.
+-   **StudentEvaluation.xlsx** - The data set we use to evaluate our model. It lacks `PH`. Our model will have to be scored by an outside group with knowledge of the actual pH values.
+
+*Note: Both Excel files are in simple CSV format.*
+
+```{r load_data}
+# Load crime dataset
+df <- read_excel('datasets/StudentData.xlsx')
+df_eval <- read_excel('datasets/StudentEvaluation.xlsx')
+
+# remove the empty PH column from the evaluation data
+df_eval <- df_eval %>%
+  dplyr::select(-PH)
+```
+
+Below is a list of the variables of interest in the data set:
+
+-   `Brand Code`: categorical, values: A, B, C, D
+-   `Carb Volume`:
+-   `Fill Ounces`:
+-   `PC Volume`:
+-   `Carb Pressure`:
+-   `Carb Temp`:
+-   `PSC`:
+-   `PSC Fill`:
+-   `PSC CO2`:
+-   `Mnf Flow`:
+-   `Carb Pressure1`:
+-   `Fill Pressure`:
+-   `Hyd Pressure1`:
+-   `Hyd Pressure2`:
+-   `Hyd Pressure3`:
+-   `Hyd Pressure4`:
+-   `Filler Level`:
+-   `Filler Speed`:
+-   `Temperature`:
+-   `Usage cont`:
+-   `Carb Flow`:
+-   `Density`:
+-   `MFR`:
+-   `Balling`:
+-   `Pressure Vacuum`:
+-   `PH`: **the TARGET we will try to predict.**
+-   `Bowl Setpoint`:
+-   `Pressure Setpoint`:
+-   `Air Pressurer`:
+-   `Alch Rel`:
+-   `Carb Rel`:
+-   `Balling Lvl`:
+
+### Summary Stats
+
+We compiled summary statistics on our dataset to better understand the data before modeling.
+
+```{r data_summary}
+# Display summary statistics
+skim(df)
+```
+
+First, across features, there are numerous missing data--coded as NA--that will need to be imputed. Especially note that 4 rows are missing a `PH` value. We will need to drop these rows as they cannot be used for training. Second, the basic histograms suggest that skewness is prevalent across features. Examples include `PSC CO2` and `MFR`. And third, some of the skewed features appear to show near-zero variance, with a large number of 0 or even negative values, e.g. `Hyd Pressure1` and `Hyd Pressure2`. In general, the skewness and imbalance may require imputation.
+
+### Check Target Class Bias
+
+If we treat `PH` as a classification problem, we need to understand any class imbalance, as this may impact predicted classification. Our class balance is:
+
+```{r}
+hist(df$PH)
+```
+
+`PH` is normally distributed with possible outliers on the low and high ends. This distribution suggests a pure classification approach could be problematic as the predictions may favor pH values in the mid-range (where there are more data points). Natural boundaries may exist such that classification adds predictive information. However, given the normal shape, a regression or possible ensemble with regression and classification seems more appropriate.
+
+### Missing Data
+
+Before continuing, let us better understand any patterns of missingness across predictor features.
+
+```{r echo=FALSE}
+# Identify missing data by Feature and display percent breakout
+# missing <- colSums(df %>% sapply(is.na))
+# missing_pct <- round(missing / nrow(df) * 100, 2)
+# stack(sort(missing_pct, decreasing = TRUE))
+
+# Various NA plots to inspect data
+knitr::kable(miss_var_summary(df), 
+             caption = 'Missing Values',
+             format="html", 
+             table.attr="style='width:50%;'") %>% 
+  kableExtra::kable_styling()
+
+gg_miss_var(df)
+gg_miss_upset(df)
+```
+
+Notice that approximately 8.25 percent of the rows are missing a value for `MFR`. We may need to drop this feature considering that, as missingness increases, so do the potential negative consequences of imputation. Additionally, the categorical feature `Brand Code` is missing approximately 4.67 percent of its values. Since we do not know whether these values represent another brand or are actually missing, we will create a new feature category 'Unknown' consisting of missing values. The rest of the features are only missing small percentages of values, suggesting that KNN imputation should be safe.
+
+### Distributions
+
+Next, we visualize the distributions of each of the predictor features. The visuals will help us select features for modeling, assess relationships between features and with `PH`, and identify outliers as well as transformations that might improve model resolution.
+
+```{r, fig.height = 10, fig.width = 10, echo=FALSE}
+# Prepare data for ggplot
+gather_df <- df %>% 
+  drop_na() %>%
+  dplyr::select(-c(PH, `Brand Code`)) %>%
+  gather(key = 'variable', value = 'value')
+
+# Histogram plots of each variable
+ggplot(gather_df) + 
+  geom_histogram(aes(x=value, y = ..density..), bins=30) + 
+  geom_density(aes(x=value), color='blue') +
+  facet_wrap(. ~variable, scales='free', ncol=4)
+```
+
+The distribution profiles show the prevalence of kurtosis, specifically right skew in variables `Oxygen Filler`, `PSC`, and `Temperature` and left skew in `Filler Speed` and `MFR`. These deviations from a traditional normal distribution can be problematic for linear regression assumptions, and thus we might need to transform the data. Several features are discrete with limited possible values, e.g. `Pressure Setpoint`. Furthermore, we have a number of bimodel features--see `Air Pressurer`, `Balling`, and `Balling Level`.
+
+Bimodal features in a dataset are problematic but interesting, representing areas of potential opportunity and exploration. They suggest the existence of two different groups, or classes, within a given feature. These groups may have separate but overlapping distributions that could provide powerful predictive power in a model.
+
+Were we tackling in-depth feature engineering in this analysis, we could leverage the package, `mixtools` (see R Vignette). This package helps regress *mixed models* where data can be subdivided into subgroups. We could then add new binary features to indicate for each instance, the distribution to which it belongs.
+
+Here is a quick example showing a possible mix within `Air Pressurer`:
+
+```{r}
+# Select `Air Pressurer` column and remove any missing data
+df_mix <- df %>% 
+  dplyr::select(`Air Pressurer`) %>%
+  tidyr::drop_na()
+
+# Calculate mixed distributions for indus
+air_pressure_mix <- normalmixEM(df_mix$`Air Pressurer`, 
+                            lambda = .5, 
+                            mu = c(140, 148), 
+                            sigma = 1, 
+                            maxit=60)
+
+# Simple plot to illustrate possible bimodal mix of groups
+plot(air_pressure_mix, 
+     whichplots = 2,
+     density = TRUE, 
+     main2 = "`Air Pressurer` Possible Distributions", 
+     xlab2 = "Air Pressurer")
+```
+
+Lastly, several features have relatively normal distributions along with high numbers of values at an extreme. We have no information on whether these extreme values are mistakes, data errors, or otherwise inexplicable. As such, we will need to review each associated feature to determine whether to impute the values, leave them as is, or apply feature engineering.
+
+### Boxplots
+
+We also elected to use boxplots to understand the spread of each feature.
+
+```{r, fig.height = 10, fig.width = 10, echo=FALSE}
+# Prepare data for ggplot
+gather_df <- df %>% 
+  dplyr::select(-c(PH, `Brand Code`)) %>%
+  tidyr::drop_na() %>%
+  gather(key = 'variable', value = 'value')
+
+# Boxplots for each variable
+gather_df %>% ggplot() + 
+  geom_boxplot(aes(x=variable, y=value)) + 
+  facet_wrap(. ~variable, scales='free', ncol=6)
+```
+
+The boxplots reveal outliers, though none of them seem egregious enough to warrant imputing or removal. Outliers should only be imputed or dropped if we have reason to believe they are errant or contain no critical information.
+
+### Variable Plots
+
+Next, we generate scatter plots of each predictor versus the target to get an idea of the relationship between them.
+
+```{r, fig.height = 10, fig.width = 10, echo=FALSE}
+df_features <- df %>% 
+  dplyr::select(-c(PH, `Brand Code`))
+
+df_features$PH <- df$PH
+df_features <- df_features %>%
+  drop_na
+
+feature_count <- ncol(df_features) - 1
+
+# Plot scatter plots of each variable versus the target variable
+# Note that we are braking these into sets of 8 features ata  time so the 
+# resulting plots are more readable.
+sets <- 8
+batches <- (feature_count) %/% sets
+
+for (i in 0:batches) {
+  start <- i * sets + 1
+  end <- start + (sets - 1)
+  
+  if (end > feature_count) {
+    end <- feature_count
+  }
+  
+  # print(paste(feature_count, sets, i, start, end))
+  
+  p <- caret::featurePlot(x=df_features[,start:end], y=df_features[,feature_count+1], plot="pairs", pch=20)
+  print(p)
+}
+```
+
+The scatter plots indicate some clear relationships between our target and predictor features, such as `PH` and `Oxygen Filter` or `PH` and `Alch Rel`. However, we also see clear correlations between some of the predictors, like `Carb Temp` and `Carb Pressure`. Overall, although our plots indicate some interesting relationships, they also underline the aforementioned possible issues with the data. For instance, many predictors have skewed distributions, and in some cases, missing data may be recorded as '0'.
+
+### Feature-Target Correlations
+
+We next quantify the relationships visualized above. In general, our model should focus on features showing stronger positive or negative correlations with `PH`. Features with correlations closer to zero will probably not provide any meaningful information on pH levels.
+
+```{r echo=FALSE}
+# Show feature correlations/target by decreasing correlation
+stack(sort(cor(df_features[, feature_count + 1], df_features[,1:feature_count])[,], 
+           decreasing=TRUE))
+```
+
+It appears that `Bowl Setpoint`, `Filler Level`, `Carb Flow`, `Pressure Vacuum`, and `Carb Rel` have the highest correlations (positive) with `PH`, while `Mnf Flow`, `Usage cont`, `Fill Pressure`, `Pressure Setpoint`, and `Hyd Pressure3` have the strongest negative correlations with `PH`. The other features have a weak or slightly negative correlation, which implies they have less predictive power.
+
+### Multicollinearity
+
+One problem that can occur with multi-variable regression is a correlation between variables, called Multicolinearity. A quick check is to run correlations between variables.
+
+```{r echo=FALSE, fig.height=8, fig.width=10}
+# Calculate and plot the Multicolinearity
+df_features <- df %>%
+  dplyr::select(-c(`Brand Code`))
+correlation = cor(df_features, use = 'pairwise.complete.obs')
+
+corrplot(correlation, 'ellipse', type = 'lower', order = 'hclust',
+         col=brewer.pal(n=8, name="RdYlBu"))
+```
+
+We can see that some variables are highly correlated with one another, such as `Balling Level` and `Carb Volume`, `Carb Rel`, `Alch Rel`, `Density`, and `Balling`, with a correlation between 0.75 and 1 When we start considering features for our models, we'll need to account for the correlations between features and avoid including pairs with strong correlations.
+
+As a note, this dataset is challenging as many of the predictive features go hand-in-hand with other features and multicolinearity will be a problem.
+
+### Near Zero Variance
+
+Lastly, we want to check for any features that show near zero variance. Features that are the same across most of the instances will add little predictive information.
+
+```{r}
+nzv <- nearZeroVar(df, saveMetrics= TRUE)
+nzv[nzv$nzv,][1:5,] %>% drop_na()
+```
+
+`Hyd Pressure1` shows little variance - we will drop this feature.
+
+## 2. Data Preparation
+
+To summarize our data preparation and exploration, we can distinguish our findings into a few categories below:
+
+### Removed Fields
+
+-   `MFR` has \> 8% missing values - remove this feature.
+-   `Hyd Pressure1` shows little variance - remove this feature.
+
+```{r}
+# Remove the fields from our training data
+df_clean <- df %>%
+  dplyr::select(-c(MFR, `Hyd Pressure1`))
+
+# remove the fields from our evaluation data
+df_eval_clean <- df_eval %>%
+  dplyr::select(-c(MFR, `Hyd Pressure1`))
+  
+```
+
+### Missing Values
+
+-   We had 4 rows with missing `PH` that need to be removed.
+-   Replace missing `Brand Code` with "Unknown"
+-   Impute remaining missing values using `kNN()` from the `VIM` package
+
+```{r}
+# drop rows with missing PH
+df_clean <- df_clean %>%
+  filter(!is.na(PH))
+
+# Change Brand Code missing to 'Unknown' in our training data
+brand_code <- df_clean %>%
+  dplyr::select(`Brand Code`) %>%
+  replace_na(list(`Brand Code` = 'Unknown'))
+
+df_clean$`Brand Code` <- brand_code$`Brand Code`
+
+# Change Brand Code missing to 'Unknown' in our evaluation data
+brand_code <- df_eval_clean %>%
+  dplyr::select(`Brand Code`) %>%
+  replace_na(list(`Brand Code` = 'Unknown'))
+
+df_eval_clean$`Brand Code` <- df_eval_clean$`Brand Code`
+
+# There is an edge case where our Eval data might have a `Brand Code` not seen in our training set.
+# If so, let's convert them to 'Unknown'.  This is appropriate since any model trained without the
+# new value wouldn't be able to glean any info from it.
+codes <- unique(df_clean$`Brand Code`)
+
+df_eval_clean <- df_eval_clean %>%
+  mutate(`Brand Code`  = if_else(`Brand Code` %in% codes, `Brand Code`, 'Unknown'))
+
+# Use the kNN imputing method from VIM package to impute missing values in our training data
+df_clean <- df_clean %>% 
+  kNN(k=10) %>%
+  dplyr::select(colnames(df_clean))
+
+# Use the kNN imputing method from VIM package to impute missing values in our training data
+df_eval_clean <- df_eval_clean %>% 
+  kNN(k=10) %>%
+  dplyr::select(colnames(df_eval_clean))
+```
+
+### Outliers
+
+No outliers were removed as all values seemed reasonable.
+
+### Convert Categorical to Dummy
+
+`Brand Code` is a categorical variable with values A, B, C, D and Unknown. For modeling, we will convert this to a set of dummy columns.
+
+```{r warning=FALSE}
+# -----
+# Training data - Convert our `Brand Code` column into a set of dummy variables
+df_clean_dummy <- dummyVars(PH ~ `Brand Code`, data = df_clean)
+dummies <- predict(df_clean_dummy, df_clean)
+
+# Get the dummy column names
+dummy_cols <- sort(colnames(dummies))
+
+# Make sure the new dummy columns are sorted in alpha order (to make sure our columns will match the eval dataset)
+dummies <- as.tibble(dummies) %>%
+  dplyr::select(dummy_cols)
+
+# remove the original categorical feature
+df_clean <- df_clean %>%
+  dplyr::select(-`Brand Code`)
+
+# add the new dummy columns to our main training dataframe
+df_clean <- cbind(dummies, df_clean)
+
+# -----
+# Evaluation data - Convert our `Brand Code` column into a set of dummy variables
+#df_eval_clean <- dummyVars(PH ~ `Brand Code`, data = df_eval_clean)
+df_eval_clean$PH <- 1
+eval_dummies <- predict(df_clean_dummy, df_eval_clean)
+
+# Edge Case - if the eval dataset is doesn't have a specific `Brand Code`
+# we will be missing the necessary dummy column.  Let's check and if necessary add 
+# appropriate dummy columns with all 0's.
+
+for (c in dummy_cols) {
+  if (!(c %in% colnames(eval_dummies))) {
+    eval_dummies[c] <- 0
+  }
+}
+
+# Now sort the eval_dummy columns so they match the training set dummies
+eval_dummy_cols <- sort(colnames(eval_dummies))
+eval_dummies <- as.tibble(eval_dummies) %>%
+  dplyr::select(eval_dummy_cols)
+
+# remove the original categorical feature
+df_eval_clean <- df_eval_clean %>%
+  dplyr::select(-c(`Brand Code`, PH))
+
+# add the new dummy columns to our main eval dataframe
+df_eval_clean <- cbind(eval_dummies, df_eval_clean)
+```
+
+### Transform non-normal variables
+
+Finally, as mentioned earlier in our data exploration, and our findings from our histogram plots, we can see that some of our variables are highly skewed. To address this, we decided to scale, center and BoxCox transform (using caret preProcess) to make them more normally distributed.
+
+```{r, echo=FALSE, fig.height=14, fig.width=8, message=FALSE, warning=FALSE}
+# Drop the target, PH, we don't want to transform our target, only features
+df_features <- df_clean %>%
+  dplyr::select(-c(PH))
+
+# Our evaluation (hold out data), note it didn't have the PH column
+df_eval_features <- df_eval_clean
+
+# Use caret pre-processing to handle scaling, norm'ing and BoxCox transforming our training data.
+# We build the caret transformation on the training data, but will use that same xform against the 
+# evaluation data.
+preProcValues <- preProcess(
+  df_features, 
+  method = c("center", "scale", "BoxCox"))
+
+df_transformed <- predict(preProcValues, df_features)
+df_transformed$PH <- df_clean$PH
+
+df_eval_transformed <- predict(preProcValues, df_eval_features)
+
+preProcValues
+```
+
+Here are some plots to demonstrate the changes in distributions before and after the transformations:
+
+```{r fig.height = 10, fig.width = 10}
+# Prepare data for ggplot
+gather_df <- df_transformed %>% 
+  dplyr::select(-c(PH)) %>%
+  gather(key = 'variable', value = 'value')
+
+# Histogram plots of each variable
+ggplot(gather_df) + 
+  geom_histogram(aes(x=value, y = ..density..), bins=30) + 
+  geom_density(aes(x=value), color='blue') +
+  facet_wrap(. ~variable, scales='free', ncol=4)
+```
+
+As expected, the dummy variables, e.g. ``` ``Brand Code``A ``` appear are binary and we still have bimodal features as we didn't apply any feature engineering on them. A few still show skew, e.g. `PSC Fill` and `Temperature`, but they are closer to normal.
+
+### Finalizing the dataset for model building
+
+With our transformations complete, we can now continue on to building our models.
+
+## 3. Build Models
+
+*Using the training data, build at least three different models. Since we have multicolinearity, we should select appropriate models intolerate of it or do feature selection*
+
+*Be sure to explain how you can make inferences from the model, as well as discuss other relevant model output. Discuss the coefficients in the models, do they make sense? Are you keeping the model even though it is counter-intuitive? Why? The boss needs to know.*
+
+### Model-building methodology
+
+With a solid understanding of our dataset at this point, and with our data cleaned, we can now start to build out candidate models. We will explore ...(LR, PLS?, KNN?, SVM?, )
+
+*Need answer from Jeff on explanability vs Accuracy ... if accuracy, then Neural Net or t-SNE probably better direction. Not all models have varImp() method for variable importance.*
+
+First, we decided to split our cleaned dataset into a training and testing set (80% training, 20% testing). This was necessary as the provided holdout evaluation dataset doesn't provide `PH` values so we cannot measure our model performance against that dataset.
+
+```{r}
+set.seed(181)
+
+# utilizing one dataset for all four models
+training_set <- createDataPartition(df_transformed$PH, p=0.8, list=FALSE)
+df_train <- df_transformed[training_set,]
+df_test <- df_transformed[-training_set,]
+```
+
+#### Model \#1 *(Multi-LM)*
+
+Using our training dataset, we decided to run a binary logistic regression model that included all non-transformed features that we hadn't removed following our data cleaning process mentioned above.
+
+```{r}
+# Model 1 - Build Multi-Linear Regression
+model1_raw <- lm(PH ~ ., df_train)
+
+# Build model 1 - only significant features (using stepAIC)
+model1 <- stepAIC(model1_raw, direction = "both",
+                         scope = list(upper = model1_raw, lower = ~ 1),
+                         scale = 0, trace = FALSE)
+
+# Display Model 1 Summary
+(lmf_s <- summary(model1))
+confint(model1)
+
+# Display Model 1 Residual plots
+residPlot(lmf_s)
+
+# Display Variable feature importance plot
+variableImportancePlot(model1, "Model 1 LM Variable Importance")
+
+# print variable inflation factor score
+print('VIF scores of predictors')
+
+VIF(model1)
+```
+
+Applying Model 1 against our Test Data:
+
+```{r}
+# Predict df_test and calculate performance
+```
+
+*INSERT discussion here*
+
+#### Model \#2 *(Let's skip Partial Least Squares (PLS) model here. Ridge Regression)*
+
+```{r}
+#model2 <- plsr(PH ~ ., data=df_train)
+
+#summary(model2)
+
+# print variable inflation factor score
+#print('VIF scores of predictors')
+
+#VIF(model2)
+#variableImportancePlot(model2)
+```
+
+Applying Model 2 against our Test Data:
+
+```{r}
+# Predict df_test and calculate performance
+```
+
+#### Model \#3 *(ElasticNet)*
+
+```{r}
+#model2 <- plsr(PH ~ ., data=df_train)
+
+#summary(model2)
+
+# print variable inflation factor score
+#print('VIF scores of predictors')
+
+#VIF(model2)
+#variableImportancePlot(model2)
+```
+
+Applying Model 2 against our Test Data:
+
+```{r}
+# Predict df_test and calculate performance
+```
+
+#### 
+
+#### Model \#4? *(Neural Network - Regression)*
+
+*Insert discussion*
+
+```{r}
+# use caret::nnet()
+```
+
+Applying Model 4 against our Test Data:
+
+```{r}
+# Predict df_test and calculate performance
+```
+
+#### Model \#5? *(kNN - Classification)*
+
+*Insert discussion*
+
+```{r}
+```
+
+Applying Model 5 against our Test Data:
+
+```{r}
+# Predict df_test and calculate performance
+```
+
+#### Model \#6? *(XGBoost - Classification?)*
+
+*Insert discussion*
+
+```{r}
+```
+
+Applying Model 6 against our Test Data:
+
+```{r}
+# Predict df_test and calculate performance
+```
+
+#### Model \#7? *(Kera DL NN)*
+
+*Insert discussion*
+
+```{r}
+```
+
+Applying Model 7 against our Test Data:
+
+```{r}
+# Predict df_test and calculate performance
+```
+
+Model \#8 (**cubist)**
+
+*Insert discussion*
+
+```{r}
+```
+
+Applying Model 8 against our Test Data:
+
+```{r}
+# Predict df_test and calculate performance
+```
+
+### 
+
+### Model Summary
+
+*Insert discussion and summary*
+
+## 4. Model Selection & Analysis
+
+*For the model, will you use a metric such as log-likelihood, AIC, ROC curve, etc.? Using the training data set, evaluate the model based on (a) accuracy, (b) classification error rate, (c) precision, (d) sensitivity, (e) specificity, (f) F1 score, (g) AUC, and (h) confusion matrix. Make predictions using the evaluation data set.*
+
+*Insert discussion here*
+
+## Predictions
+
+We apply **Model \#N** to the holdout evaluation set to predict the targets for these instances. We have saved these predictions as csv in the file `eval_predictions.csv`.
+
+Source code: <https://github.com/djlofland/DATA624_F2020_Group/tree/master/eval_predictions.csv>
+
+```{r, echo=F}
+predictions <- predict(model1, df_eval_transformed)
+df_eval$PH <- round(predictions, 2)
+
+write.csv(df_eval, 'eval_predictions.csv', row.names=F)
+```
+
+## References
+
+-   A Modern Approach to Regression with R: Simon Sheather
+-   Linear Models with R: Julian Faraway.
+-   R package vignette, [mixtools: An R Package for Analyzing Finite Mixture Models](https://cran.r-project.org/web/packages/mixtools/vignettes/mixtools.pdf)
+-   [7 Classic OLS assumptions](https://statisticsbyjim.com/regression/ols-linear-regression-assumptions/)
+-   [Detecting Multicolinearity with VIF](https://online.stat.psu.edu/stat462/node/180/)
+-   Applied Predictive Modeling: Kuhn & Johnson
+
+## Appendix
+
+### R Code
+
+    # Copy final R code here and hide it up above
