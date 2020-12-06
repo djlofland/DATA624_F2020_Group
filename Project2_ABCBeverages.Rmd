@@ -4,12 +4,12 @@ subtitle: 'ABC Beverage - pH Analysis'
 author: 'Donny Lofland, Dennis Pong, Charlie Rosemond'
 date: '12/13/2020'
 output:
-  html_document:  
+  html_document: 
     theme: cerulean
     highlight: pygments
     css: ./lab.css
-    toc: true
-    toc_float: true
+    toc: yes
+    toc_float: yes
     code_folding: hide
   pdf_document:
     extra_dependencies: ["geometry", "multicol", "multirow", "xcolor"]
@@ -18,10 +18,10 @@ output:
 Source code: <https://github.com/djlofland/DATA624_F2020_Group/tree/master/>
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, warning = FALSE, include=TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, include=TRUE)
 ```
 
-```{r paged.print=FALSE,  include=FALSE}
+```{r paged.print=TRUE,  include=FALSE}
 
 # TODO: Remove unnecessary libraries once project is done
 
@@ -63,6 +63,8 @@ library(dplyr)
 library(reshape2)
 library(tibble)
 
+library(vip)
+library(glmnet) # for ridge
 #' Print a side-by-side Histogram and QQPlot of Residuals
 #'
 #' @param model A model
@@ -663,16 +665,29 @@ residPlot(lmf_s)
 # Display Variable feature importance plot
 variableImportancePlot(model1, "Model 1 LM Variable Importance")
 
+# use vip::vip to plot variable importance
+vip(model1, color = "red", fill = "purple")
+
 # print variable inflation factor score
 print('VIF scores of predictors')
 
+# Calculates the variation inflation factors of all predictors in regression models
 VIF(model1)
+
+
+
 ```
 
 Applying Model 1 against our Test Data:
 
 ```{r}
 # Predict df_test and calculate performance
+model1_pred <- predict(model1, df_test)
+
+# Merge the results into a data frame called results 
+results <- data.frame()
+results <- data.frame(t(postResample(pred = model1_pred, obs = df_test$PH))) %>% 
+    mutate(Model = "Mutiple Regression") %>% rbind(results)
 ```
 
 *INSERT discussion here*
@@ -680,41 +695,50 @@ Applying Model 1 against our Test Data:
 #### Model \#2 *(Let's skip Partial Least Squares (PLS) model here. Ridge Regression)*
 
 ```{r}
-#model2 <- plsr(PH ~ ., data=df_train)
+# to find the right lambda using cv.glmnet
+x_train <- model.matrix(PH ~ ., data = df_train)
+x_test <- model.matrix(PH ~ ., data = df_test)
 
-#summary(model2)
+cv.glmnet <- cv.glmnet(x_train, df_train$PH, alpha = 0)
 
-# print variable inflation factor score
-#print('VIF scores of predictors')
-
-#VIF(model2)
-#variableImportancePlot(model2)
+ridge_model <- glmnet(x_train, df_train$PH, alpha = 0, lambda = cv.glmnet$lambda.min)
 ```
 
 Applying Model 2 against our Test Data:
 
 ```{r}
 # Predict df_test and calculate performance
+pred_ridge <- predict(ridge_model, x_test)
+
+
+
+results <- data.frame(t(postResample(pred = pred_ridge, obs = df_test$PH))) %>% 
+    mutate(Model = "Ridge Regression") %>% rbind(results)
 ```
 
 #### Model \#3 *(ElasticNet)*
 
 ```{r}
-#model2 <- plsr(PH ~ ., data=df_train)
+# training the elastic net regression model using train
+elas_net_model <- train(
+                        PH ~ ., data = df_train, method = "glmnet",
+                        trControl = trainControl("repeatedcv", repeats = 8),
+                        tuneLength = 4
+)
 
-#summary(model2)
 
-# print variable inflation factor score
-#print('VIF scores of predictors')
-
-#VIF(model2)
-#variableImportancePlot(model2)
 ```
 
-Applying Model 2 against our Test Data:
+Applying Model 3 against our Test Data:
 
 ```{r}
-# Predict df_test and calculate performance
+# Make predictions
+elas_net_pred <- predict(elas_net_model, df_test)
+# Model performance metrics
+
+
+results <- data.frame(t(postResample(pred=elas_net_pred, obs=df_test$PH))) %>% 
+    mutate(Model = "ElasticNet Regression") %>% rbind(results)
 ```
 
 #### 
