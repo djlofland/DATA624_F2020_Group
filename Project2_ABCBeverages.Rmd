@@ -835,7 +835,11 @@ results <- data.frame(t(postResample(pred = gbmPred, obs = df_test$PH))) %>% mut
 
 #### Model \#7 Multivariate Adaptive Regression Splines (MARS)
 
+<<<<<<< Updated upstream
 ##### *(Kera Deep Learning NN). This might be a redundant method to Model \#4. I chose MARS to replace the original choosing of Kera Neural Network in Kera.* 
+=======
+##### *(Kera Deep Learning NN). This might be a redundant method to Model \#4. I chose MARS to replace the original choosing of Kera Neural Network in Kera.*
+>>>>>>> Stashed changes
 
 *Insert discussion*
 
