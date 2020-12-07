@@ -58,8 +58,9 @@ library(regclass)
 library(pROC)
 
 library(tidyverse)        # TIDY packages
+library(dplyr)   # dplyr has to be loaded before tidyr
 library(tidyr)
-library(dplyr)
+
 library(reshape2)
 library(tibble)
 
@@ -743,70 +744,136 @@ results <- data.frame(t(postResample(pred=elas_net_pred, obs=df_test$PH))) %>%
 
 #### 
 
-#### Model \#4? *(Neural Network - Regression)*
+#### Model \#4 *(Neural Network)*
 
 *Insert discussion*
 
 ```{r}
-# use caret::nnet()
+# using method avNNET from train, which is to aggregate several neural network models by averaging
+nnetGrid <- expand.grid(.decay = c(0.1, 0.5), .size = c(1,10), .bag = FALSE)
+
+nnet.model <- train(PH ~ ., data = df_train, method = "avNNet", preProcess = c("center", 
+    "scale"), tuneGrid = nnetGrid, trControl = trainControl(method = "repeatedcv", 
+    repeats = 1), trace = FALSE, linout = TRUE, maxit = 500)
+
+nnet.model
+
 ```
 
 Applying Model 4 against our Test Data:
 
 ```{r}
 # Predict df_test and calculate performance
+nnet_pred <- predict(nnet.model, newdata = df_test)
+results <- data.frame(t(postResample(pred = nnet_pred, obs = df_test$PH))) %>% 
+    mutate(Model = "Neural Network (avNNET - Modeling Averaging)") %>% rbind(results)
+
 ```
 
-#### Model \#5? *(kNN - Classification)*
+#### Model \#5 *(kNN - Classification)*
 
 *Insert discussion*
 
 ```{r}
+
+knnModel <- train(PH ~ ., data = df_train, method = "knn", preProc = c("center","scale"), tuneLength = 10)
+knnModel
+
 ```
 
 Applying Model 5 against our Test Data:
 
 ```{r}
 # Predict df_test and calculate performance
+knnPred <- predict(knnModel, newdata = df_test)
+results <- data.frame(t(postResample(pred = knnPred, obs = df_test$PH))) %>% 
+    mutate(Model = "k-Nearest Neighbors(kNN)") %>% rbind(results)
+
 ```
 
-#### Model \#6? *(XGBoost - Classification?)*
+#### Model \#6 Generalized Boosted Regression Modeling (GBM). Dump XGBoost
 
 *Insert discussion*
 
 ```{r}
+set.seed(244)
+
+df_transformed1 <- df_transformed %>% dplyr::select (-PH)
+
+X.train <- df_transformed1[training_set, ]
+y.train <- df_transformed$PH[training_set]
+X.test <- df_transformed1[-training_set, ]
+y.test <- df_transformed$PH[-training_set]
+
+grid <- expand.grid(n.trees = c(50, 100, 150, 200), interaction.depth = c(1, 5, 10, 
+    15), shrinkage = c(0.01, 0.1, 0.5), n.minobsinnode = c(5, 10, 15))
+gbm_Model <- train(x = X.train, y = y.train, method = "gbm", tuneGrid = grid, verbose = FALSE  # turn off the status of training process
+)
+
+plot(gbm_Model)
+
+
+```
+
+```{r}
+gbm_Model$bestTune
+```
+
+```{r}
+gbm_Model$finalModel
 ```
 
 Applying Model 6 against our Test Data:
 
 ```{r}
 # Predict df_test and calculate performance
+
+gbmPred <- predict(gbm_Model, newdata = df_test)
+results <- data.frame(t(postResample(pred = gbmPred, obs = df_test$PH))) %>% mutate(Model = "Generalized Boosted Regression Modeling (GBM)") %>% rbind(results)
+
 ```
 
-#### Model \#7? *(Kera DL NN)*
+#### Model \#7 *(Kera Deep Learning NN). This might be a redundant method to Model \#4. I chose MARS to replace the original choosing of Kera Neural Network in Kera.* Multivariate Adaptive Regression Splines (MARS)
 
 *Insert discussion*
 
-```{r}
+```{r MARS}
+options(max.print = 1e+06)
+
+mars.grid <- expand.grid(.degree = 1:2, .nprune = 2:15)
+
+mars.model <- train(x = X.train, y = y.train, method = "earth", tuneGrid = mars.grid, 
+    preProcess = c("center", "scale"), tuneLength = 10)
+
+mars.model
 ```
 
 Applying Model 7 against our Test Data:
 
 ```{r}
 # Predict df_test and calculate performance
+mars_pred <- predict(mars.model, newdata = X.test)
+results <- data.frame(t(postResample(pred = mars_pred, obs = y.test))) %>% mutate(Model = "Multivariate Adaptive Regression Splines (MARS)") %>% rbind(results)
+
 ```
 
-Model \#8 (**cubist)**
+#### Model \#8 (**cubist)**
 
 *Insert discussion*
 
-```{r}
+```{r Cubist}
+set.seed(244)
+cubist_Model <- train(x = X.train, y = y.train, method = "cubist")
+cubist_Model
 ```
 
 Applying Model 8 against our Test Data:
 
 ```{r}
 # Predict df_test and calculate performance
+Cubist.pred <- predict(cubist_Model, newdata = X.test)
+results <- data.frame(t(postResample(pred = Cubist.pred, obs = y.test))) %>% mutate(Model = "Cubist Model") %>% rbind(results)
+
 ```
 
 ### 
