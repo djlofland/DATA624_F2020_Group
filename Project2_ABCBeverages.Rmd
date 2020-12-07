@@ -833,7 +833,9 @@ results <- data.frame(t(postResample(pred = gbmPred, obs = df_test$PH))) %>% mut
 
 ```
 
-#### Model \#7 *(Kera Deep Learning NN). This might be a redundant method to Model \#4. I chose MARS to replace the original choosing of Kera Neural Network in Kera.* Multivariate Adaptive Regression Splines (MARS)
+#### Model \#7 Multivariate Adaptive Regression Splines (MARS)
+
+##### *(Kera Deep Learning NN). This might be a redundant method to Model \#4. I chose MARS to replace the original choosing of Kera Neural Network in Kera.* 
 
 *Insert discussion*
 
@@ -879,6 +881,10 @@ results <- data.frame(t(postResample(pred = Cubist.pred, obs = y.test))) %>% mut
 ### 
 
 ### Model Summary
+
+```{r}
+results %>% dplyr::select(Model, RMSE, Rsquared, MAE)
+```
 
 *Insert discussion and summary*
 
