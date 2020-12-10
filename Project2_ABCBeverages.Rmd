@@ -427,7 +427,7 @@ It appears that `Bowl Setpoint`, `Filler Level`, `Carb Flow`, `Pressure Vacuum`,
 
 ### Multicollinearity
 
-One problem that can occur with multi-variable regression is a correlation between variables, called Multicolinearity. A quick check is to run correlations between variables.
+One problem that can occur with multiple regression is a correlation between predictive features, or multicollinearity. A quick check is to run correlations between all predictors.
 
 ```{r echo=FALSE, fig.height=8, fig.width=10}
 # Calculate and plot the Multicollinearity
@@ -452,11 +452,11 @@ nzv <- nearZeroVar(df, saveMetrics= TRUE)
 nzv[nzv$nzv,][1:5,] %>% drop_na()
 ```
 
-`Hyd Pressure1` shows little variance - we will drop this feature.
+`Hyd Pressure1` displays near-zero variance. We will drop this feature prior to modeling.
 
 ## 2. Data Preparation
 
-To summarize our data preparation and exploration, we can distinguish our findings into a few categories below:
+To summarize our data preparation and exploration, we distinguish our findings into a few categories below.
 
 ### Removed Fields
 
@@ -477,8 +477,9 @@ df_eval_clean <- df_eval %>%
 ### Missing Values
 
 * We had 4 rows with missing `PH` that need to be removed.
-* Replace missing `Brand Code` with "Unknown"
+* We replace missing values for `Brand Code` with "Unknown".
 * Impute remaining missing values using `kNN()` from the `VIM` package
+* We then impute remaining missing values using `kNN()` from the `VIM` package.
 
 ```{r}
 # drop rows with missing PH
@@ -520,11 +521,11 @@ df_eval_clean <- df_eval_clean %>%
 
 ### Outliers
 
-No outliers were removed as all values seemed reasonable.
+We do not drop any outliers given all values seem reasonable.
 
 ### Convert Categorical to Dummy
 
-`Brand Code` is a categorical variable with values A, B, C, D and Unknown. For modeling, we will convert this to a set of dummy columns.
+`Brand Code` is a categorical variable with values A, B, C, D and Unknown. We convert it to a set of dummy columns for modeling.
 
 ```{r warning=FALSE}
 # -----
@@ -575,9 +576,9 @@ df_eval_clean <- df_eval_clean %>%
 df_eval_clean <- cbind(eval_dummies, df_eval_clean)
 ```
 
-### Transform non-normal variables
+### Transform features with skewed distributions
 
-Finally, as mentioned earlier in our data exploration, and our findings from our histogram plots, we can see that some of our variables are highly skewed. To address this, we decided to scale, center and BoxCox transform (using caret preProcess) to make them more normally distributed.
+Finally, as mentioned earlier in our data exploration, and our findings from our histogram plots, we can see that some of our features are highly skewed. To address this skewness, we scale, center, and apply the Box-Cox transformation to the skewed features using `preProcess` from `caret`. These transformations should result in distributions that better approximate normal and thus facilitate modeling.
 
 ```{r, echo=FALSE, fig.height=14, fig.width=8, message=FALSE, warning=FALSE}
 # Drop the target, PH, we don't want to transform our target, only features
@@ -697,9 +698,7 @@ results <- data.frame(t(postResample(pred = model1_pred, obs = df_test$PH))) %>%
 
 *INSERT discussion here*
 
-#### Model #2 
-
-Let's skip Partial Least Squares (PLS) model here. Ridge Regression
+#### Model #2 Ridge Regression
 
 ```{r}
 cl <- makePSOCKcluster(5)
