@@ -421,10 +421,10 @@ It appears that `Bowl Setpoint`, `Filler Level`, `Carb Flow`, `Pressure Vacuum`,
 
 ### Multicollinearity
 
-One problem that can occur with multi-variable regression is a correlation between variables, called Multicolinearity.  A quick check is to run correlations between variables.   
+One problem that can occur with multiple regression is a correlation between predictors, or multicollinearity.  A quick check is to run correlations between all model features.   
 
 ```{r echo=FALSE, fig.height=8, fig.width=10}
-# Calculate and plot the Multicolinearity
+# Calculate and plot the multicollinearity
 df_features <- df %>%
   dplyr::select(-c(`Brand Code`))
 correlation = cor(df_features, use = 'pairwise.complete.obs')
@@ -433,9 +433,7 @@ corrplot(correlation, 'ellipse', type = 'lower', order = 'hclust',
          col=brewer.pal(n=8, name="RdYlBu"))
 ```
 
-We can see that some variables are highly correlated with one another, such as `Balling Level` and `Carb Volume`, `Carb Rel`, `Alch Rel`, `Density`, and `Balling`, with a correlation between 0.75 and 1 When we start considering features for our models, we'll need to account for the correlations between features and avoid including pairs with strong correlations.
-
-As a note, this dataset is challenging as many of the predictive features go hand-in-hand with other features and multicolinearity will be a problem.
+We can see that the `Balling`- and `Carb`-related features are highly correlated within groups, with positive correlations between 0.75 and 1. In general, this dataset is challenging as many of the predictive features go hand-in-hand with others, and our models will need to account for this multicollinearity.
 
 ### Near Zero Variance
 
