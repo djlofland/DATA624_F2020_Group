@@ -634,9 +634,9 @@ df_train <- df_transformed[training_set,]
 df_test <- df_transformed[-training_set,]
 ```
 
-#### Model #1 *(Multi-LM)*
+#### Model 1 - Multiple Linear Regression
 
-Using our training dataset, we decided to run a binary logistic regression model that included all non-transformed features that we hadn't removed following our data cleaning process mentioned above. 
+Using our training dataset, we start with a multiple linear regression model that regresses `PH` on, initially, all of the features not removed during data preparation. We then use a stepwise process to home in on solely the most significant features. 
 
 ```{r}
 # Model 1 - Build Multi-Linear Regression
@@ -671,7 +671,9 @@ Applying Model 1 against our Test Data:
 
 *INSERT discussion here*
 
-#### Model #2 *(PLS?, Ridge?, ENET?)*
+#### Model 2 - Ridge Regression
+
+Our second model employs ridge regression, a technique that uses shrinkage to penalize feature estimates that may be inflated due to collinearity. Given multicollinearity appears prevalent in this dataset, ridge seems like a reasonable approach.
 
 ```{r}
 #model2 <- plsr(PH ~ ., data=df_train)
