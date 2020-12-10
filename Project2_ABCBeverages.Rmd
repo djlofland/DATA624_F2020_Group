@@ -4,24 +4,24 @@ subtitle: 'ABC Beverage - pH Analysis'
 author: 'Donny Lofland, Dennis Pong, Charlie Rosemond'
 date: '12/13/2020'
 output:
-  html_document:  
-    code_folding: hide
+  html_document: 
     theme: cerulean
     highlight: pygments
     css: ./lab.css
-    toc: true
-    toc_float: true
+    toc: yes
+    toc_float: yes
+    code_folding: hide
   pdf_document:
     extra_dependencies: ["geometry", "multicol", "multirow", "xcolor"]
 ---
 
-Source code: [https://github.com/djlofland/DATA624_F2020_Group/tree/master/](https://github.com/djlofland/DATA624_F2020_Group/tree/master/)
+Source code: <https://github.com/djlofland/DATA624_F2020_Group/tree/master/>
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, warning = FALSE, include=TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, include=TRUE)
 ```
 
-```{r paged.print=FALSE,  include=FALSE}
+```{r paged.print=TRUE,  include=FALSE}
 
 # TODO: Remove unnecessary libraries once project is done
 
@@ -50,7 +50,7 @@ library(fpp2)
 library(fma)
 library(kableExtra)
 library(e1071)
-library(DataExplorer)
+# library(DataExplorer)
 library(timeDate)
 library(mixtools)
 library(tidymodels)
@@ -58,11 +58,14 @@ library(regclass)
 library(pROC)
 
 library(tidyverse)        # TIDY packages
+library(dplyr)   # dplyr has to be loaded before tidyr
 library(tidyr)
-library(dplyr)
+
 library(reshape2)
 library(tibble)
 
+library(vip)
+library(glmnet) # for ridge
 #' Print a side-by-side Histogram and QQPlot of Residuals
 #'
 #' @param model A model
@@ -194,22 +197,22 @@ Please submit both RPubs links and .rmd files or other readable formats for tech
 
 ## Introduction
 
-*Insert short overview of what the data contains and what we are trying to accomplish by building a model.  Discuss our overall approach and what models might be appropriate.*
+*Insert short overview of what the data contains and what we are trying to accomplish by building a model. Discuss our overall approach and what models might be appropriate.*
 
 Our team's analysis seeks to build understanding of the ABC Beverage manufacturing process and the related factors that affect the pH of the company's beverage products. We apply machine learning approaches--specifically, a series of supervised learning algorithms--to company data to build then select a predictive model of pH. This model could help the company adapt its processes in a changing regulatory environment.
 
 ## 1. Data Exploration
 
-*Describe the size and the variables in the training data set. Consider that too much detail will cause a manager to lose interest while too little detail will make the manager consider that you aren’t doing your job. Some suggestions are given below.*
+*Describe the size and the variables in the training data set. Consider that too much detail will cause a manager to lose interest while too little detail will make the manager consider that you aren't doing your job. Some suggestions are given below.*
 
 ### Dataset
 
-The training data set contains 32 categorical, continuous, or discrete features and 2571 rows, with 267 rows reserved for an evaluation set that lacks the target. That target is `PH`, which should be a continuous variable but has 52 distinct values in the training set. As a result, possible predictive models could include regression, classification, or an ensemble of both.  
+The training data set contains 32 categorical, continuous, or discrete features and 2571 rows, with 267 rows reserved for an evaluation set that lacks the target. That target is `PH`, which should be a continuous variable but has 52 distinct values in the training set. As a result, possible predictive models could include regression, classification, or an ensemble of both.
 
 There are two files provided:
 
-* **StudentData.xlsx** - The data set we use to train our model. It contains `PH`, the feature we seek to predict.
-* **StudentEvaluation.xlsx** - The data set we use to evaluate our model. It lacks `PH`. Our model will have to be scored by an outside group with knowledge of the actual pH values.
+-   **StudentData.xlsx** - The data set we use to train our model. It contains `PH`, the feature we seek to predict.
+-   **StudentEvaluation.xlsx** - The data set we use to evaluate our model. It lacks `PH`. Our model will have to be scored by an outside group with knowledge of the actual pH values.
 
 *Note: Both Excel files are in simple CSV format.*
 
@@ -225,42 +228,42 @@ df_eval <- df_eval %>%
 
 Below is a list of the variables of interest in the data set:
 
-* `Brand Code`: categorical, values: A, B, C, D
-* `Carb Volume`: 
-* `Fill Ounces`: 
-* `PC Volume`: 
-* `Carb Pressure`: 
-* `Carb Temp`: 
-* `PSC`: 
-* `PSC Fill`: 
-* `PSC CO2`: 
-* `Mnf Flow`: 
-* `Carb Pressure1`: 
-* `Fill Pressure`: 
-* `Hyd Pressure1`: 
-* `Hyd Pressure2`: 
-* `Hyd Pressure3`: 
-* `Hyd Pressure4`: 
-* `Filler Level`: 
-* `Filler Speed`: 
-* `Temperature`: 
-* `Usage cont`: 
-* `Carb Flow`: 
-* `Density`: 
-* `MFR`: 
-* `Balling`: 
-* `Pressure Vacuum`: 
-* `PH`: **the TARGET we will try to predict.**
-* `Bowl Setpoint`: 
-* `Pressure Setpoint`: 
-* `Air Pressurer`: 
-* `Alch Rel`: 
-* `Carb Rel`: 
-* `Balling Lvl`: 
+-   `Brand Code`: categorical, values: A, B, C, D
+-   `Carb Volume`:
+-   `Fill Ounces`:
+-   `PC Volume`:
+-   `Carb Pressure`:
+-   `Carb Temp`:
+-   `PSC`:
+-   `PSC Fill`:
+-   `PSC CO2`:
+-   `Mnf Flow`:
+-   `Carb Pressure1`:
+-   `Fill Pressure`:
+-   `Hyd Pressure1`:
+-   `Hyd Pressure2`:
+-   `Hyd Pressure3`:
+-   `Hyd Pressure4`:
+-   `Filler Level`:
+-   `Filler Speed`:
+-   `Temperature`:
+-   `Usage cont`:
+-   `Carb Flow`:
+-   `Density`:
+-   `MFR`:
+-   `Balling`:
+-   `Pressure Vacuum`:
+-   `PH`: **the TARGET we will try to predict.**
+-   `Bowl Setpoint`:
+-   `Pressure Setpoint`:
+-   `Air Pressurer`:
+-   `Alch Rel`:
+-   `Carb Rel`:
+-   `Balling Lvl`:
 
 ### Summary Stats
 
-We compiled summary statistics on our dataset to better understand the data before modeling. 
+We compiled summary statistics on our dataset to better understand the data before modeling.
 
 ```{r data_summary}
 # Display summary statistics
@@ -277,13 +280,13 @@ If we treat `PH` as a classification problem, we need to understand any class im
 hist(df$PH)
 ```
 
-`PH` is normally distributed with possible outliers on the low and high ends. This distribution suggests a pure classification approach could be problematic as the predictions may favor pH values in the mid-range (where there are more data points). Natural boundaries may exist such that classification adds predictive information. However, given the normal shape, a regression or possible ensemble with regression and classification seems more appropriate.  
+`PH` is normally distributed with possible outliers on the low and high ends. This distribution suggests a pure classification approach could be problematic as the predictions may favor pH values in the mid-range (where there are more data points). Natural boundaries may exist such that classification adds predictive information. However, given the normal shape, a regression or possible ensemble with regression and classification seems more appropriate.
 
 ### Missing Data
 
 Before continuing, let us better understand any patterns of missingness across predictor features.
 
-```{r echo=FALSE} 
+```{r echo=FALSE}
 # Identify missing data by Feature and display percent breakout
 # missing <- colSums(df %>% sapply(is.na))
 # missing_pct <- round(missing / nrow(df) * 100, 2)
@@ -353,7 +356,7 @@ Lastly, several features have relatively normal distributions along with high nu
 
 ### Boxplots
 
-We also elected to use boxplots to understand the spread of each feature.  
+We also elected to use boxplots to understand the spread of each feature.
 
 ```{r, fig.height = 10, fig.width = 10, echo=FALSE}
 # Prepare data for ggplot
@@ -372,7 +375,7 @@ The boxplots reveal outliers, though none of them seem egregious enough to warra
 
 ### Variable Plots
 
-Next, we generate scatter plots of each predictor versus the target to get an idea of the relationship between them. 
+Next, we generate scatter plots of each predictor versus the target to get an idea of the relationship between them.
 
 ```{r, fig.height = 10, fig.width = 10, echo=FALSE}
 df_features <- df %>% 
@@ -421,10 +424,10 @@ It appears that `Bowl Setpoint`, `Filler Level`, `Carb Flow`, `Pressure Vacuum`,
 
 ### Multicollinearity
 
-One problem that can occur with multiple regression is a correlation between predictive features, or multicollinearity. A quick check is to run correlations between all predictors.
+One problem that can occur with multi-variable regression is a correlation between variables, called Multicolinearity. A quick check is to run correlations between variables.
 
 ```{r echo=FALSE, fig.height=8, fig.width=10}
-# Calculate and plot the multicollinearity
+# Calculate and plot the Multicolinearity
 df_features <- df %>%
   dplyr::select(-c(`Brand Code`))
 correlation = cor(df_features, use = 'pairwise.complete.obs')
@@ -433,27 +436,29 @@ corrplot(correlation, 'ellipse', type = 'lower', order = 'hclust',
          col=brewer.pal(n=8, name="RdYlBu"))
 ```
 
-We can see that the `Balling`- and `Carb`-related features are highly correlated within groups, with positive correlations between 0.75 and 1. In general, this dataset is challenging given many of the predictive features go hand-in-hand with others. Our models will thus need to account for this multicollinearity.
+We can see that some variables are highly correlated with one another, such as `Balling Level` and `Carb Volume`, `Carb Rel`, `Alch Rel`, `Density`, and `Balling`, with a correlation between 0.75 and 1 When we start considering features for our models, we'll need to account for the correlations between features and avoid including pairs with strong correlations.
 
-### Near-Zero Variance
+As a note, this dataset is challenging as many of the predictive features go hand-in-hand with other features and multicolinearity will be a problem.
 
-Lastly, we want to check for any features that show near-zero variance. Any features that are largely the same--i.e., that have very few distinct values--across most of the instances will add little predictive information to a model.  
+### Near Zero Variance
+
+Lastly, we want to check for any features that show near zero variance. Features that are the same across most of the instances will add little predictive information.
 
 ```{r}
 nzv <- nearZeroVar(df, saveMetrics= TRUE)
 nzv[nzv$nzv,][1:5,] %>% drop_na()
 ```
 
-`Hyd Pressure1` displays near-zero variance--we will drop this feature prior to modeling.
+`Hyd Pressure1` shows little variance - we will drop this feature.
 
 ## 2. Data Preparation
 
-To summarize our data preparation and exploration, we distinguish our findings into a few categories below.
+To summarize our data preparation and exploration, we can distinguish our findings into a few categories below:
 
 ### Removed Fields
 
-* `MFR` has > 8% missing values--We remove this feature.
-* `Hyd Pressure1` shows near-zero variance--We remove this feature.
+-   `MFR` has \> 8% missing values - remove this feature.
+-   `Hyd Pressure1` shows little variance - remove this feature.
 
 ```{r}
 # Remove the fields from our training data
@@ -468,9 +473,9 @@ df_eval_clean <- df_eval %>%
 
 ### Missing Values
 
-* We remove 4 rows with missing values for `PH`.
-* We replace missing values for `Brand Code` with "Unknown".
-* We then impute remaining missing values using `kNN()` from the `VIM` package.
+-   We had 4 rows with missing `PH` that need to be removed.
+-   Replace missing `Brand Code` with "Unknown"
+-   Impute remaining missing values using `kNN()` from the `VIM` package
 
 ```{r}
 # drop rows with missing PH
@@ -512,11 +517,11 @@ df_eval_clean <- df_eval_clean %>%
 
 ### Outliers
 
-We do not drop any outliers given all values seem reasonable. 
+No outliers were removed as all values seemed reasonable.
 
 ### Convert Categorical to Dummy
 
-`Brand Code` is a categorical variable with values A, B, C, D and Unknown. We convert it to a set of dummy columns for modeling.
+`Brand Code` is a categorical variable with values A, B, C, D and Unknown. For modeling, we will convert this to a set of dummy columns.
 
 ```{r warning=FALSE}
 # -----
@@ -567,9 +572,9 @@ df_eval_clean <- df_eval_clean %>%
 df_eval_clean <- cbind(eval_dummies, df_eval_clean)
 ```
 
-### Transform features with skewed distributions
+### Transform non-normal variables
 
-Finally, as mentioned earlier in our data exploration, and our findings from our histogram plots, we can see that some of our features are highly skewed. To address this skewness, we scale, center, and apply the Box-Cox transformation to the skewed features using `preProcess` from `caret`. These transformations should result in distributions that better approximate normal and thus facilitate modeling.  
+Finally, as mentioned earlier in our data exploration, and our findings from our histogram plots, we can see that some of our variables are highly skewed. To address this, we decided to scale, center and BoxCox transform (using caret preProcess) to make them more normally distributed.
 
 ```{r, echo=FALSE, fig.height=14, fig.width=8, message=FALSE, warning=FALSE}
 # Drop the target, PH, we don't want to transform our target, only features
@@ -609,24 +614,28 @@ ggplot(gather_df) +
   facet_wrap(. ~variable, scales='free', ncol=4)
 ```
 
-As expected, the dummies, e.g. ` ``Brand Code``A`, remain binary, as do the other bimodal features. Some features like `PSC Fill` and `Temperature` continue to show skewness, though their distributions appear closer to normal. With the data transformations complete, we are now ready to build our models.
+As expected, the dummy variables, e.g. ``` ``Brand Code``A ``` appear are binary and we still have bimodal features as we didn't apply any feature engineering on them. A few still show skew, e.g. `PSC Fill` and `Temperature`, but they are closer to normal.
+
+### Finalizing the dataset for model building
+
+With our transformations complete, we can now continue on to building our models.
 
 ## 3. Build Models
 
-*Using the training data, build at least three different models.  Since we have multicolinearity, we should select appropriate models intolerate of it or do feature selection* 
+*Using the training data, build at least three different models. Since we have multicolinearity, we should select appropriate models intolerate of it or do feature selection*
 
-*Be sure to explain how you can make inferences from the model, as well as discuss other relevant model output. Discuss the coefficients in the models, do they make sense? Are you keeping the model even though it is counter-intuitive? Why? The boss needs to know.* 
+*Be sure to explain how you can make inferences from the model, as well as discuss other relevant model output. Discuss the coefficients in the models, do they make sense? Are you keeping the model even though it is counter-intuitive? Why? The boss needs to know.*
 
-### Model-building methodology  
+### Model-building methodology
 
-Now with a solid understanding of our data, we can now start to build out candidate models. Specifically, we will explore methods including multiple linear regression, ridge regression, elastic net, K-nearest neighbors, and XGBoost.
+With a solid understanding of our dataset at this point, and with our data cleaned, we can now start to build out candidate models. We will explore ...(LR, PLS?, KNN?, SVM?, )
 
-*Need answer from Jeff on explanability vs Accuracy ... if accuracy, then Neural Net or t-SNE probably better direction.  Not all models have varImp() method for variable importance.*
+*Need answer from Jeff on explanability vs Accuracy ... if accuracy, then Neural Net or t-SNE probably better direction. Not all models have varImp() method for variable importance.*
 
-First, we split our cleaned dataset into training and testing sets (80% training, 20% testing). This split is necessary as the provided evaluation dataset does not provide `PH` values, meaning we cannot measure our model performance against those data. 
+First, we decided to split our cleaned dataset into a training and testing set (80% training, 20% testing). This was necessary as the provided holdout evaluation dataset doesn't provide `PH` values so we cannot measure our model performance against that dataset.
 
 ```{r}
-set.seed(123456)
+set.seed(181)
 
 # utilizing one dataset for all four models
 training_set <- createDataPartition(df_transformed$PH, p=0.8, list=FALSE)
@@ -634,9 +643,9 @@ df_train <- df_transformed[training_set,]
 df_test <- df_transformed[-training_set,]
 ```
 
-#### Model 1 - Multiple Linear Regression
+#### Model \#1 *(Multi-LM)*
 
-Using our training dataset, we start with a multiple linear regression model that regresses `PH` on, initially, all of the features not removed during data preparation. We then use a stepwise process to home in on solely the most significant features. 
+Using our training dataset, we decided to run a binary logistic regression model that included all non-transformed features that we hadn't removed following our data cleaning process mentioned above.
 
 ```{r}
 # Model 1 - Build Multi-Linear Regression
@@ -657,100 +666,229 @@ residPlot(lmf_s)
 # Display Variable feature importance plot
 variableImportancePlot(model1, "Model 1 LM Variable Importance")
 
+# use vip::vip to plot variable importance
+vip(model1, color = "red", fill = "purple")
+
 # print variable inflation factor score
 print('VIF scores of predictors')
 
+# Calculates the variation inflation factors of all predictors in regression models
 VIF(model1)
+
+
+
 ```
 
 Applying Model 1 against our Test Data:
 
 ```{r}
 # Predict df_test and calculate performance
+model1_pred <- predict(model1, df_test)
+
+# Merge the results into a data frame called results 
+results <- data.frame()
+results <- data.frame(t(postResample(pred = model1_pred, obs = df_test$PH))) %>% 
+    mutate(Model = "Mutiple Regression") %>% rbind(results)
 ```
 
 *INSERT discussion here*
 
-#### Model 2 - Ridge Regression
-
-Our second model employs ridge regression, a technique that uses shrinkage to penalize feature estimates that may be inflated due to collinearity. Given multicollinearity appears prevalent in this dataset, ridge seems like a reasonable approach.
+#### Model \#2 *(Let's skip Partial Least Squares (PLS) model here. Ridge Regression)*
 
 ```{r}
-#model2 <- plsr(PH ~ ., data=df_train)
+# to find the right lambda using cv.glmnet
+x_train <- model.matrix(PH ~ ., data = df_train)
+x_test <- model.matrix(PH ~ ., data = df_test)
 
-#summary(model2)
+cv.glmnet <- cv.glmnet(x_train, df_train$PH, alpha = 0)
 
-# print variable inflation factor score
-#print('VIF scores of predictors')
-
-#VIF(model2)
-#variableImportancePlot(model2)
+ridge_model <- glmnet(x_train, df_train$PH, alpha = 0, lambda = cv.glmnet$lambda.min)
 ```
 
 Applying Model 2 against our Test Data:
 
 ```{r}
 # Predict df_test and calculate performance
+pred_ridge <- predict(ridge_model, x_test)
+
+
+
+results <- data.frame(t(postResample(pred = pred_ridge, obs = df_test$PH))) %>% 
+    mutate(Model = "Ridge Regression") %>% rbind(results)
 ```
 
-#### Model #3? *(Neural Network - Regression)*
-
-*Insert discussion*
+#### Model \#3 *(ElasticNet)*
 
 ```{r}
-# use caret::nnet()
+# training the elastic net regression model using train
+elas_net_model <- train(
+                        PH ~ ., data = df_train, method = "glmnet",
+                        trControl = trainControl("repeatedcv", repeats = 8),
+                        tuneLength = 4
+)
+
+
 ```
 
 Applying Model 3 against our Test Data:
 
 ```{r}
-# Predict df_test and calculate performance
+# Make predictions
+elas_net_pred <- predict(elas_net_model, df_test)
+# Model performance metrics
+
+
+results <- data.frame(t(postResample(pred=elas_net_pred, obs=df_test$PH))) %>% 
+    mutate(Model = "ElasticNet Regression") %>% rbind(results)
 ```
 
-#### Model #4? *(kNN - Classification)*
+#### 
+
+#### Model \#4 *(Neural Network)*
 
 *Insert discussion*
 
 ```{r}
+# using method avNNET from train, which is to aggregate several neural network models by averaging
+nnetGrid <- expand.grid(.decay = c(0.1, 0.5), .size = c(1,10), .bag = FALSE)
+
+nnet.model <- train(PH ~ ., data = df_train, method = "avNNet", preProcess = c("center", 
+    "scale"), tuneGrid = nnetGrid, trControl = trainControl(method = "repeatedcv", 
+    repeats = 1), trace = FALSE, linout = TRUE, maxit = 500)
+
+nnet.model
+
 ```
 
 Applying Model 4 against our Test Data:
 
 ```{r}
 # Predict df_test and calculate performance
+nnet_pred <- predict(nnet.model, newdata = df_test)
+results <- data.frame(t(postResample(pred = nnet_pred, obs = df_test$PH))) %>% 
+    mutate(Model = "Neural Network (avNNET - Modeling Averaging)") %>% rbind(results)
+
 ```
 
-#### Model #5? *(XGBoost - Classification?)*
+#### Model \#5 *(kNN - Classification)*
 
 *Insert discussion*
 
 ```{r}
+
+knnModel <- train(PH ~ ., data = df_train, method = "knn", preProc = c("center","scale"), tuneLength = 10)
+knnModel
+
 ```
 
 Applying Model 5 against our Test Data:
 
 ```{r}
 # Predict df_test and calculate performance
+knnPred <- predict(knnModel, newdata = df_test)
+results <- data.frame(t(postResample(pred = knnPred, obs = df_test$PH))) %>% 
+    mutate(Model = "k-Nearest Neighbors(kNN)") %>% rbind(results)
+
 ```
 
-#### Model #6? *(Kera DL NN)*
+#### Model \#6 Generalized Boosted Regression Modeling (GBM). Dump XGBoost
 
 *Insert discussion*
 
 ```{r}
+set.seed(244)
+
+df_transformed1 <- df_transformed %>% dplyr::select (-PH)
+
+X.train <- df_transformed1[training_set, ]
+y.train <- df_transformed$PH[training_set]
+X.test <- df_transformed1[-training_set, ]
+y.test <- df_transformed$PH[-training_set]
+
+grid <- expand.grid(n.trees = c(50, 100, 150, 200), interaction.depth = c(1, 5, 10, 
+    15), shrinkage = c(0.01, 0.1, 0.5), n.minobsinnode = c(5, 10, 15))
+gbm_Model <- train(x = X.train, y = y.train, method = "gbm", tuneGrid = grid, verbose = FALSE  # turn off the status of training process
+)
+
+plot(gbm_Model)
+
+
+```
+
+```{r}
+gbm_Model$bestTune
+```
+
+```{r}
+gbm_Model$finalModel
 ```
 
 Applying Model 6 against our Test Data:
 
 ```{r}
 # Predict df_test and calculate performance
+
+gbmPred <- predict(gbm_Model, newdata = df_test)
+results <- data.frame(t(postResample(pred = gbmPred, obs = df_test$PH))) %>% mutate(Model = "Generalized Boosted Regression Modeling (GBM)") %>% rbind(results)
+
 ```
 
-### Model Summary  
+#### Model \#7 Multivariate Adaptive Regression Splines (MARS)
+
+##### *(Kera Deep Learning NN). This might be a redundant method to Model \#4. I chose MARS to replace the original choosing of Kera Neural Network in Kera.*
+
+*Insert discussion*
+
+```{r MARS}
+options(max.print = 1e+06)
+
+mars.grid <- expand.grid(.degree = 1:2, .nprune = 2:15)
+
+mars.model <- train(x = X.train, y = y.train, method = "earth", tuneGrid = mars.grid, 
+    preProcess = c("center", "scale"), tuneLength = 10)
+
+mars.model
+```
+
+Applying Model 7 against our Test Data:
+
+```{r}
+# Predict df_test and calculate performance
+mars_pred <- predict(mars.model, newdata = X.test)
+results <- data.frame(t(postResample(pred = mars_pred, obs = y.test))) %>% mutate(Model = "Multivariate Adaptive Regression Splines (MARS)") %>% rbind(results)
+
+```
+
+#### Model \#8 (**cubist)**
+
+*Insert discussion*
+
+```{r Cubist}
+set.seed(244)
+cubist_Model <- train(x = X.train, y = y.train, method = "cubist")
+cubist_Model
+```
+
+Applying Model 8 against our Test Data:
+
+```{r}
+# Predict df_test and calculate performance
+Cubist.pred <- predict(cubist_Model, newdata = X.test)
+results <- data.frame(t(postResample(pred = Cubist.pred, obs = y.test))) %>% mutate(Model = "Cubist Model") %>% rbind(results)
+
+```
+
+### 
+
+### Model Summary
+
+```{r}
+results %>% dplyr::select(Model, RMSE, Rsquared, MAE)
+```
 
 *Insert discussion and summary*
 
-## 4. Model Selection & Analysis 
+## 4. Model Selection & Analysis
 
 *For the model, will you use a metric such as log-likelihood, AIC, ROC curve, etc.? Using the training data set, evaluate the model based on (a) accuracy, (b) classification error rate, (c) precision, (d) sensitivity, (e) specificity, (f) F1 score, (g) AUC, and (h) confusion matrix. Make predictions using the evaluation data set.*
 
@@ -758,9 +896,9 @@ Applying Model 6 against our Test Data:
 
 ## Predictions
 
-We apply **Model #N** to the holdout evaluation set to predict the targets for these instances. We have saved these predictions as csv in the file `eval_predictions.csv`.
+We apply **Model \#N** to the holdout evaluation set to predict the targets for these instances. We have saved these predictions as csv in the file `eval_predictions.csv`.
 
-Source code: [https://github.com/djlofland/DATA624_F2020_Group/tree/master/eval_predictions.csv](https://github.com/djlofland/DATA624_F2020_Group/tree/master/eval_predictions.csv)
+Source code: <https://github.com/djlofland/DATA624_F2020_Group/tree/master/eval_predictions.csv>
 
 ```{r, echo=F}
 predictions <- predict(model1, df_eval_transformed)
@@ -771,17 +909,15 @@ write.csv(df_eval, 'eval_predictions.csv', row.names=F)
 
 ## References
 
-- A Modern Approach to Regression with R: Simon Sheather
-- Linear Models with R: Julian Faraway. 
-- R package vignette, [mixtools: An R Package for Analyzing Finite Mixture Models](https://cran.r-project.org/web/packages/mixtools/vignettes/mixtools.pdf)
-- [7 Classic OLS assumptions](https://statisticsbyjim.com/regression/ols-linear-regression-assumptions/)
-- [Detecting Multicolinearity with VIF](https://online.stat.psu.edu/stat462/node/180/)
-- Applied Predictive Modeling: Kuhn & Johnson
+-   A Modern Approach to Regression with R: Simon Sheather
+-   Linear Models with R: Julian Faraway.
+-   R package vignette, [mixtools: An R Package for Analyzing Finite Mixture Models](https://cran.r-project.org/web/packages/mixtools/vignettes/mixtools.pdf)
+-   [7 Classic OLS assumptions](https://statisticsbyjim.com/regression/ols-linear-regression-assumptions/)
+-   [Detecting Multicolinearity with VIF](https://online.stat.psu.edu/stat462/node/180/)
+-   Applied Predictive Modeling: Kuhn & Johnson
 
 ## Appendix
 
 ### R Code
 
-```
-# Copy final R code here and hide it up above
-```
+    # Copy final R code here and hide it up above
