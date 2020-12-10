@@ -448,12 +448,12 @@ nzv[nzv$nzv,][1:5,] %>% drop_na()
 
 ## 2. Data Preparation
 
-To summarize our data preparation and exploration, we can distinguish our findings into a few categories below:
+To summarize our data preparation and exploration, we distinguish our findings into a few categories below.
 
 ### Removed Fields
 
-* `MFR` has > 8% missing values - remove this feature.
-* `Hyd Pressure1` shows little variance - remove this feature.
+* `MFR` has > 8% missing values--We remove this feature.
+* `Hyd Pressure1` shows near-zero variance--We remove this feature.
 
 ```{r}
 # Remove the fields from our training data
@@ -468,9 +468,9 @@ df_eval_clean <- df_eval %>%
 
 ### Missing Values
 
-* We had 4 rows with missing `PH` that need to be removed.
-* Replace missing `Brand Code` with "Unknown"
-* Impute remaining missing values using `kNN()` from the `VIM` package
+* We remove 4 rows with missing values for `PH`.
+* We replace missing values for `Brand Code` with "Unknown".
+* We then impute remaining missing values using `kNN()` from the `VIM` package.
 
 ```{r}
 # drop rows with missing PH
@@ -512,11 +512,11 @@ df_eval_clean <- df_eval_clean %>%
 
 ### Outliers
 
-No outliers were removed as all values seemed reasonable. 
+We do not drop any outliers given all values seem reasonable. 
 
 ### Convert Categorical to Dummy
 
-`Brand Code` is a categorical variable with values A, B, C, D and Unknown.  For modeling, we will convert this to a set of dummy columns.
+`Brand Code` is a categorical variable with values A, B, C, D and Unknown. We convert it to a set of dummy columns for modeling.
 
 ```{r warning=FALSE}
 # -----
