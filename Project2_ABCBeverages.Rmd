@@ -451,12 +451,12 @@ nzv[nzv$nzv,][1:5,] %>% drop_na()
 
 ## 2. Data Preparation
 
-To summarize our data preparation and exploration, we can distinguish our findings into a few categories below:
+To summarize our data preparation and exploration, we distinguish our findings into a few categories below.
 
 ### Removed Fields
 
--   `MFR` has \> 8% missing values - remove this feature.
--   `Hyd Pressure1` shows little variance - remove this feature.
+-   `MFR` has > 8% missing values--We remove this feature.
+-   `Hyd Pressure1` shows near-zero variance--We remove this feature.
 
 ```{r}
 # Remove the fields from our training data
@@ -471,9 +471,9 @@ df_eval_clean <- df_eval %>%
 
 ### Missing Values
 
--   We had 4 rows with missing `PH` that need to be removed.
--   Replace missing `Brand Code` with "Unknown"
+-   We replace missing values for `Brand Code` with "Unknown".
 -   Impute remaining missing values using `kNN()` from the `VIM` package
+-   We then impute remaining missing values using `kNN()` from the `VIM` package.
 
 ```{r}
 # drop rows with missing PH
@@ -515,11 +515,11 @@ df_eval_clean <- df_eval_clean %>%
 
 ### Outliers
 
-No outliers were removed as all values seemed reasonable.
+We do not drop any outliers given all values seem reasonable.
 
 ### Convert Categorical to Dummy
 
-`Brand Code` is a categorical variable with values A, B, C, D and Unknown. For modeling, we will convert this to a set of dummy columns.
+`Brand Code` is a categorical variable with values A, B, C, D and Unknown. We convert it to a set of dummy columns for modeling.
 
 ```{r warning=FALSE}
 # -----
@@ -570,9 +570,9 @@ df_eval_clean <- df_eval_clean %>%
 df_eval_clean <- cbind(eval_dummies, df_eval_clean)
 ```
 
-### Transform non-normal variables
+### Transform features with skewed distributions
 
-Finally, as mentioned earlier in our data exploration, and our findings from our histogram plots, we can see that some of our variables are highly skewed. To address this, we decided to scale, center and BoxCox transform (using caret preProcess) to make them more normally distributed.
+Finally, as mentioned earlier in our data exploration, and our findings from our histogram plots, we can see that some of our features are highly skewed. To address this skewness, we scale, center, and apply the Box-Cox transformation to the skewed features using `preProcess` from `caret`. These transformations should result in distributions that better approximate normal and thus facilitate modeling.
 
 ```{r, echo=FALSE, fig.height=14, fig.width=8, message=FALSE, warning=FALSE}
 # Drop the target, PH, we don't want to transform our target, only features
@@ -612,11 +612,7 @@ ggplot(gather_df) +
   facet_wrap(. ~variable, scales='free', ncol=4)
 ```
 
-As expected, the dummy variables, e.g. ``` ``Brand Code``A ``` appear are binary and we still have bimodal features as we didn't apply any feature engineering on them. A few still show skew, e.g. `PSC Fill` and `Temperature`, but they are closer to normal.
-
-### Finalizing the dataset for model building
-
-With our transformations complete, we can now continue on to building our models.
+As expected, the dummies, e.g. ` ``Brand Code``A`, remain binary, as do the other bimodal features. Some features like `PSC Fill` and `Temperature` continue to show skewness, though their distributions appear closer to normal. With the data transformations complete, we are now ready to build our models.
 
 ## 3. Build Models
 
