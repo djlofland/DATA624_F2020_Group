@@ -619,11 +619,11 @@ As expected, the dummies, e.g. ` ``Brand Code``A`, remain binary, as do the othe
 
 ### Model-building methodology  
 
-With a solid understanding of our dataset at this point, and with our data cleaned, we can now start to build out candidate models.  We will explore ...(LR, PLS?, KNN?, SVM?, )
+Now with a solid understanding of our data, we can now start to build out candidate models. Specifically, we will explore methods including multiple linear regression, ridge regression, elastic net, K-nearest neighbors, and XGBoost.
 
 *Need answer from Jeff on explanability vs Accuracy ... if accuracy, then Neural Net or t-SNE probably better direction.  Not all models have varImp() method for variable importance.*
 
-First, we decided to split our cleaned dataset into a training and testing set (80% training, 20% testing). This was necessary as the provided holdout evaluation dataset doesn't provide `PH` values so we cannot measure our model performance against that dataset.  
+First, we split our cleaned dataset into training and testing sets (80% training, 20% testing). This split is necessary as the provided evaluation dataset does not provide `PH` values, meaning we cannot measure our model performance against those data. 
 
 ```{r}
 set.seed(123456)
