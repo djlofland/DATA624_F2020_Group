@@ -870,9 +870,9 @@ mars_pred <- predict(mars.model, newdata = X.test)
 results <- data.frame(t(postResample(pred = mars_pred, obs = y.test))) %>% mutate(Model = "Multivariate Adaptive Regression Splines (MARS)") %>% rbind(results)
 ```
 
-#### Model #8 CUBIST
+#### Model 8 - Cubist
 
-*Insert discussion*
+Our eighth and final candidate is a Cubist model. Only recently made open source, Cubist is an approach that combines a variety of tree and other rule-based aspects. These aspects include smoothing, rule-making, pruning, "boosting" through committees, and prediction adjustment using distance.
 
 ```{r Cubist}
 cl <- makePSOCKcluster(5)
