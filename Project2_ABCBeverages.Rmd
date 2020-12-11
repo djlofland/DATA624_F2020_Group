@@ -773,9 +773,9 @@ results <- data.frame(t(postResample(pred = nnet_pred, obs = df_test$PH))) %>%
 
 ```
 
-#### Model #5 *(kNN - Classification)*
+#### Model 5 - K-Nearest Neighbors Classification
 
-*Insert discussion*
+Our fifth model uses a K-nearest neighbors (KNN) classification approach to predict `PH`. Each instance's predicted value represents an average of the K nearest points in the dataset. KNN is an intuitive approach that predicts particularly well when the response shares relationships with its predictive features.
 
 ```{r}
 cl <- makePSOCKcluster(5)
