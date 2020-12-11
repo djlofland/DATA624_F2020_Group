@@ -618,23 +618,11 @@ ggplot(gather_df) +
   facet_wrap(. ~variable, scales='free', ncol=4)
 ```
 
-As expected, the dummy variables, e.g. ``` ``Brand Code``A ``` appear are binary and we still have bimodal features as we didn't apply any feature engineering on them. A few still show skew, e.g. `PSC Fill` and `Temperature`, but they are closer to normal.
-
-### Finalizing the dataset for model building
-
-With our transformations complete, we can now continue on to building our models.
+As expected, the dummy variables, e.g. ` ``Brand Code``A`, appear binary. We still have bimodal features as we did not apply any feature engineering on them. A few features, including `PSC Fill` and `Temperature`, still show skew, but they seem closer to normal. Our transformations are complete, and we can continue on to building our models.
 
 ## 3. Build Models
 
-*Using the training data, build at least three different models. Since we have multicollinearity, we should select appropriate models intolerant of feature correlations or do feature selection*
-
-*Be sure to explain how you can make inferences from the model, as well as discuss other relevant model output. Discuss the coefficients in the models, do they make sense? Are you keeping the model even though it is counter-intuitive? Why? The boss needs to know.*
-
-### Model-building methodology
-
-With a solid understanding of our dataset at this point, and with our data cleaned, we can now start to build out candidate models. We will explore ...(LR, PLS?, KNN?, SVM?, )
-
-First, we decided to split our cleaned dataset into a training and testing set (80% training, 20% testing). This was necessary as the provided holdout evaluation dataset doesn't provide `PH` values so we cannot measure our model performance against that dataset.
+With a now solid understanding of our dataset, and with our data cleaned, we can now start to build out candidate models. First, we split our cleaned dataset into training and testing sets (80% training, 20% testing). This split is necessary as the provided evaluation data set does not provide `PH` values, meaning we cannot measure our model performance against that dataset. 
 
 ```{r}
 set.seed(181)
@@ -645,9 +633,9 @@ df_train <- df_transformed[training_set,]
 df_test <- df_transformed[-training_set,]
 ```
 
-#### Model #1 *(Multi-LM)*
+#### Model 1 - Multiple Linear Regression
 
-Using our training dataset, we decided to run a binary logistic regression model that included all non-transformed features that we hadn't removed following our data cleaning process mentioned above.
+Using our training dataset, we build a multiple linear regression model that regresses `PH` on, initially, all of the features not removed during data preparation. We then use a stepwise process to home in on solely the most significant features.
 
 ```{r}
 cl <- makePSOCKcluster(5)
@@ -696,9 +684,9 @@ results <- data.frame(t(postResample(pred = model1_pred, obs = df_test$PH))) %>%
   rbind(results)
 ```
 
-*INSERT discussion here*
+#### Model 2 - Ridge Regression
 
-#### Model #2 Ridge Regression
+We employ ridge regression for our second model. Ridge regression uses shrinkage to penalizes feature estimates in efforts to control possible inflation due to multicollinearity. Given the noted presence of high correlations across features in this dataset, ridge seems like an appropriate modeling approach.
 
 ```{r}
 cl <- makePSOCKcluster(5)
