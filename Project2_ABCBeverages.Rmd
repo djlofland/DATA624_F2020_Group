@@ -842,11 +842,9 @@ results <- data.frame(t(postResample(pred = gbmPred, obs = df_test$PH))) %>% mut
 
 ```
 
-#### Model #7 MARS
+#### Model 7 - Multivariate Adaptive Regression Splines
 
-Multivariate Adaptive Regression Splines (MARS)
-
-*Insert discussion*
+The approach used for our seventh model, Multivariate Adaptive Regression Splines (MARS), creates contrasting versions of each predictor to enter the model. These versions, features known as hinge functions, each represent an exclusive portion of the data. Such features are created iteratively for all model predictors, a process that is followed by "pruning" of individual features that do not contribute to the model.
 
 ```{r MARS}
 options(max.print = 1e+06)
