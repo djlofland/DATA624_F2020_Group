@@ -622,7 +622,7 @@ As expected, the dummy variables, e.g. ` ``Brand Code``A`, appear binary. We sti
 
 ## 3. Build Models
 
-With a now solid understanding of our dataset, and with our data cleaned, we can now start to build out candidate models. First, we split our cleaned dataset into training and testing sets (80% training, 20% testing). This split is necessary as the provided evaluation data set does not provide `PH` values, meaning we cannot measure our model performance against that dataset. 
+With a now solid understanding of our dataset, and with our data cleaned, we can now start to build candidate models. First, we split our cleaned dataset into training and testing sets (80% training, 20% testing). This split is necessary as the provided evaluation data set does not provide `PH` values, meaning we cannot measure our model performance against that dataset. 
 
 ```{r}
 set.seed(181)
@@ -714,7 +714,9 @@ results <- data.frame(t(postResample(pred = pred_ridge, obs = df_test$PH))) %>%
 
 ```
 
-#### Model #3 *(ElasticNet)*
+#### Model 3 - Elastic Net
+
+Next, we build an elastic net model. Elastic net combines two types of penalties: the shrinkage of feature estimates used by ridge regression and the penalization of absolute values used by the Lasso (Least absolute shrinkage and selection operator). Here again, elastic net could help address some of the shortcomings of the dataset.
 
 ```{r}
 cl <- makePSOCKcluster(5)
@@ -741,9 +743,9 @@ results <- data.frame(t(postResample(pred=elas_net_pred, obs=df_test$PH))) %>%
     mutate(Model = "ElasticNet Regression") %>% rbind(results)
 ```
 
-#### Model #4 *(Neural Network)*
+#### Model 4 - Neural Network (avNNET - Modeling Averaging)
 
-*Insert discussion*
+Our fourth model averages results from several neural network models. Generally, a neural network will model an outcome--e.g., `PH`--using a set of unobserved, or hidden variables. Specifically, we use the method `avNNET` from `caret` to aggregate a group of models by averaging, which can have a strong positive effect on model performance.
 
 ```{r}
 cl <- makePSOCKcluster(5)
