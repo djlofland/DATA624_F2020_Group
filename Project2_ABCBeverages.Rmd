@@ -896,6 +896,8 @@ results <- data.frame(t(postResample(pred = Cubist.pred, obs = y.test))) %>% mut
 
 ### Model Summary
 
+We evaluate our eight models using three criteria: root mean squared error (RMSE), R-squared, and mean absolute error. The table below lists these criteria for each model.
+
 ```{r}
 results %>% dplyr::select(Model, RMSE, Rsquared, MAE)
 ```
