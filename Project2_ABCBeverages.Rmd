@@ -797,11 +797,9 @@ results <- data.frame(t(postResample(pred = knnPred, obs = df_test$PH))) %>%
 
 ```
 
-#### Model #6 GBM
+#### Model 6 - Gradient Boosting Machines
 
-Generalized Boosted Regression Modeling (GBM)
-
-*Insert discussion*
+A gradient boosting machine approach, or GBM, encompasses both regression and classification. GBM uses a loss function and a weak learner to build an additive model that minimizes that loss function.
 
 ```{r}
 set.seed(244)
