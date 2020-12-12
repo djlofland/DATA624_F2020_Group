@@ -822,12 +822,6 @@ results <- data.frame(t(postResample(pred = knnPred, obs = df_test$PH))) %>%
 
 A generalized boosted models, or GBM, encompasses both regression and classification. GBM uses a loss function and a weak learner to build an additive model that minimizes that loss function.
 
-```
-dtrain <- xgb.DMatrix(data=as.matrix(X.train), label=target, missing=NA)
-
-dtest <- xgb.DMatrix(data=as.matrix( prop[,feature_names,with=FALSE]), missing=NA)
-```
-
 ```{r}
 
 df_transformed1 <- df_transformed %>% dplyr::select (-PH)
@@ -841,9 +835,15 @@ cl <- makePSOCKcluster(5)
 registerDoParallel(cl)
 set.seed(181)
 
-grid <- expand.grid(n.trees = c(50, 100, 150, 200), interaction.depth = c(1, 5, 10,
-    15), shrinkage = c(0.01, 0.1, 0.5), n.minobsinnode = c(5, 10, 15))
-gbm_Model <- train(x = X.train, y = y.train, method = "gbm", tuneGrid = grid, verbose = FALSE  # turn off the status of training process
+grid <- expand.grid(n.trees = c(50, 100, 150, 200), 
+                    interaction.depth = c(1, 5, 10, 15), 
+                    shrinkage = c(0.01, 0.1, 0.5), 
+    n.minobsinnode = c(5, 10, 15))
+gbm_Model <- train(x = X.train, 
+                   y = y.train, 
+                   method = "gbm", 
+                   tuneGrid = grid, 
+                   verbose = FALSE  # turn off the status of training process
 )
 
 # df_train_data <- as.matrix(df_train[-35])
@@ -969,7 +969,7 @@ results %>% dplyr::select(Model, RMSE, Rsquared, MAE)
 
 ## 4. Model Selection
 
-Based on evaluating both RMSE and $R^2$, our Gradient Boosted Model (GBM) out performed the other models.  This is not surprising as GBM models are more tolerant of multicollinearity and better account for non-linear features. 
+Based on evaluating both RMSE and $R^2$, both Cubist and Gradient Boosted Model (GBM) outperformed the other models.  This is not surprising as these models are more tolerant of multicollinearity and better account for non-linear features. While Cubist is know for running a little faster, we selected GBM for our selected model.  Cubist generates a complex rules structure which while it can give higher accuracy, it might not retain that accuracy when faced with new data that doesn't conform to the original structure.  We felt GBM would generalize better and in a manufacturing setting with unknowns, it might be the more conservative choice.  GBM also lends itself to clearer feature importance which is an important consideration since we want an explainable model. 
 
 ```{r}
 varImp(gbm_Model)
