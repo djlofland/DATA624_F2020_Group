@@ -15,7 +15,7 @@ output:
     extra_dependencies: ["geometry", "multicol", "multirow", "xcolor"]
 ---
 
-Source code: [https://github.com/djlofland/DATA624_F2020_Group/tree/master/](https://github.com/djlofland/DATA624_F2020_Group/tree/master/)
+Source code: <https://github.com/djlofland/DATA624_F2020_Group/tree/master/>
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, include=TRUE)
@@ -68,6 +68,8 @@ library(vip)
 library(glmnet) # for ridge
 
 library(doParallel)
+
+library(xgboost)
 
 #' Print a side-by-side Histogram and QQPlot of Residuals
 #'
@@ -214,8 +216,8 @@ The training data set contains 32 categorical, continuous, or discrete features 
 
 There are two files provided:
 
-* **StudentData.xlsx** - The data set we use to train our model. It contains `PH`, the feature we seek to predict.
-* **StudentEvaluation.xlsx** - The data set we use to evaluate our model. It lacks `PH`. Our model will have to be scored by an outside group with knowledge of the actual pH values.
+-   **StudentData.xlsx** - The data set we use to train our model. It contains `PH`, the feature we seek to predict.
+-   **StudentEvaluation.xlsx** - The data set we use to evaluate our model. It lacks `PH`. Our model will have to be scored by an outside group with knowledge of the actual pH values.
 
 *Note: Both Excel files are in simple CSV format.*
 
@@ -231,38 +233,38 @@ df_eval <- df_eval %>%
 
 Below is a list of the variables of interest in the data set:
 
-* `Brand Code`: categorical, values: A, B, C, D
-* `Carb Volume`:
-* `Fill Ounces`:
-* `PC Volume`:
-* `Carb Pressure`:
-* `Carb Temp`:
-* `PSC`:
-* `PSC Fill`:
-* `PSC CO2`:
-* `Mnf Flow`:
-* `Carb Pressure1`:
-* `Fill Pressure`:
-* `Hyd Pressure1`:
-* `Hyd Pressure2`:
-* `Hyd Pressure3`:
-* `Hyd Pressure4`:
-* `Filler Level`:
-* `Filler Speed`:
-* `Temperature`:
-* `Usage cont`:
-* `Carb Flow`:
-* `Density`:
-* `MFR`:
-* `Balling`:
-* `Pressure Vacuum`:
-* `PH`: **the TARGET we will try to predict.**
-* `Bowl Setpoint`:
-* `Pressure Setpoint`:
-* `Air Pressurer`:
-* `Alch Rel`:
-* `Carb Rel`:
-* `Balling Lvl`:
+-   `Brand Code`: categorical, values: A, B, C, D
+-   `Carb Volume`:
+-   `Fill Ounces`:
+-   `PC Volume`:
+-   `Carb Pressure`:
+-   `Carb Temp`:
+-   `PSC`:
+-   `PSC Fill`:
+-   `PSC CO2`:
+-   `Mnf Flow`:
+-   `Carb Pressure1`:
+-   `Fill Pressure`:
+-   `Hyd Pressure1`:
+-   `Hyd Pressure2`:
+-   `Hyd Pressure3`:
+-   `Hyd Pressure4`:
+-   `Filler Level`:
+-   `Filler Speed`:
+-   `Temperature`:
+-   `Usage cont`:
+-   `Carb Flow`:
+-   `Density`:
+-   `MFR`:
+-   `Balling`:
+-   `Pressure Vacuum`:
+-   `PH`: **the TARGET we will try to predict.**
+-   `Bowl Setpoint`:
+-   `Pressure Setpoint`:
+-   `Air Pressurer`:
+-   `Alch Rel`:
+-   `Carb Rel`:
+-   `Balling Lvl`:
 
 ### Summary Stats
 
@@ -460,8 +462,8 @@ To summarize our data preparation and exploration, we distinguish our findings i
 
 ### Removed Fields
 
-* `MFR` has more than 8% missing values - remove this feature.
-* `Hyd Pressure1` shows little variance - remove this feature.
+-   `MFR` has more than 8% missing values - remove this feature.
+-   `Hyd Pressure1` shows little variance - remove this feature.
 
 ```{r}
 # Remove the fields from our training data
@@ -476,10 +478,10 @@ df_eval_clean <- df_eval %>%
 
 ### Missing Values
 
-* We had 4 rows with missing `PH` that need to be removed.
-* We replace missing values for `Brand Code` with "Unknown".
-* Impute remaining missing values using `kNN()` from the `VIM` package
-* We then impute remaining missing values using `kNN()` from the `VIM` package.
+-   We had 4 rows with missing `PH` that need to be removed.
+-   We replace missing values for `Brand Code` with "Unknown".
+-   Impute remaining missing values using `kNN()` from the `VIM` package
+-   We then impute remaining missing values using `kNN()` from the `VIM` package.
 
 ```{r}
 # drop rows with missing PH
@@ -618,11 +620,11 @@ ggplot(gather_df) +
   facet_wrap(. ~variable, scales='free', ncol=4)
 ```
 
-As expected, the dummy variables, e.g. ` ``Brand Code``A`, appear binary. We still have bimodal features as we did not apply any feature engineering on them. A few features, including `PSC Fill` and `Temperature`, still show skew, but they seem closer to normal. Our transformations are complete, and we can continue on to building our models.
+As expected, the dummy variables, e.g. ``` ``Brand Code``A ```, appear binary. We still have bimodal features as we did not apply any feature engineering on them. A few features, including `PSC Fill` and `Temperature`, still show skew, but they seem closer to normal. Our transformations are complete, and we can continue on to building our models.
 
 ## 3. Build Models
 
-With a now solid understanding of our dataset, and with our data cleaned, we can now start to build candidate models. First, we split our cleaned dataset into training and testing sets (80% training, 20% testing). This split is necessary as the provided evaluation data set does not provide `PH` values, meaning we cannot measure our model performance against that dataset. 
+With a now solid understanding of our dataset, and with our data cleaned, we can now start to build candidate models. First, we split our cleaned dataset into training and testing sets (80% training, 20% testing). This split is necessary as the provided evaluation data set does not provide `PH` values, meaning we cannot measure our model performance against that dataset.
 
 ```{r}
 set.seed(181)
@@ -797,9 +799,13 @@ results <- data.frame(t(postResample(pred = knnPred, obs = df_test$PH))) %>%
 
 ```
 
-#### Model 6 - Gradient Boosting Machines
+#### Model 6 - Generalized Boosted Models
 
-A gradient boosting machine approach, or GBM, encompasses both regression and classification. GBM uses a loss function and a weak learner to build an additive model that minimizes that loss function.
+A generalized boosted models, or GBM, encompasses both regression and classification. GBM uses a loss function and a weak learner to build an additive model that minimizes that loss function.
+
+dtrain \<- xgb.DMatrix(data=as.matrix(X.train),label=target, missing=NA)
+
+dtest \<- xgb.DMatrix(data=as.matrix( prop[,feature\_names,with=FALSE]), missing=NA)
 
 ```{r}
 set.seed(244)
@@ -814,11 +820,42 @@ y.test <- df_transformed$PH[-training_set]
 cl <- makePSOCKcluster(5)
 registerDoParallel(cl)
 
-grid <- expand.grid(n.trees = c(50, 100, 150, 200), interaction.depth = c(1, 5, 10, 
+grid <- expand.grid(n.trees = c(50, 100, 150, 200), interaction.depth = c(1, 5, 10,
     15), shrinkage = c(0.01, 0.1, 0.5), n.minobsinnode = c(5, 10, 15))
 gbm_Model <- train(x = X.train, y = y.train, method = "gbm", tuneGrid = grid, verbose = FALSE  # turn off the status of training process
 )
 
+
+
+
+# df_train_data <- as.matrix(df_train[-35])
+# df_train_label <- df_train[[35]]
+# dtrain <- xgb.DMatrix(data = df_train_data, label = df_train_label)
+# ###
+# df_test_data <- as.matrix(df_test[-35])
+# df_test_label <- df_test[[35]]
+# dtest <- xgb.DMatrix(data = df_test_data, label = df_test_label)
+# ###
+# cl <- makePSOCKcluster(5)
+# registerDoParallel(cl)
+# parametersGrid <- expand.grid(eta = 0.2,
+#                             colsample_bytree = 1,
+#                             max_depth = c(11, 12, 13, 14),
+#                             subsample = 1,
+#                             gamma = 0,
+#                             min_child_weight = 1,
+#                             nrounds = 25
+#                             )
+# controls <- trainControl(method = "cv", number = 10)
+# xgb1 <- train(PH ~ ., 
+#                   data = df_train,
+#                   method = "xgbTree",
+#                   objective = "reg:squarederror",
+#                   trControl = controls,
+#                   tuneGrid = parametersGrid
+#                   )
+# xgb1
+# 
 stopCluster(cl)
 
 plot(gbm_Model)
@@ -838,8 +875,11 @@ Applying Model 6 against our Test Data:
 # Predict df_test and calculate performance
 
 gbmPred <- predict(gbm_Model, newdata = df_test)
-results <- data.frame(t(postResample(pred = gbmPred, obs = df_test$PH))) %>% mutate(Model = "Generalized Boosted Regression Modeling (GBM)") %>% rbind(results)
+# y_pred <- predict(xgb,  data.matrix(X.test[,-1]))
+results <- data.frame(t(postResample(pred = gbmPred, obs = df_test$PH))) %>% mutate(Model = "Generalized Boosted Models") %>% rbind(results)
 
+# xgb1_pred <- predict(xgb1, df_test)
+# postResample(xgb1_pred, df_test$PH)
 ```
 
 #### Model 7 - Multivariate Adaptive Regression Splines
@@ -912,9 +952,9 @@ results %>% dplyr::select(Model, RMSE, Rsquared, MAE)
 
 ## Predictions
 
-We apply **Model #N** to the holdout evaluation set to predict the targets for these instances. We have saved these predictions as csv in the file `eval_predictions.csv`.
+We apply **Model \#N** to the holdout evaluation set to predict the targets for these instances. We have saved these predictions as csv in the file `eval_predictions.csv`.
 
-Source code: [https://github.com/djlofland/DATA624_F2020_Group/tree/master/eval_predictions.csv](https://github.com/djlofland/DATA624_F2020_Group/tree/master/eval_predictions.csv)
+Source code: <https://github.com/djlofland/DATA624_F2020_Group/tree/master/eval_predictions.csv>
 
 ```{r, echo=F}
 predictions <- predict(model1, df_eval_transformed)
@@ -925,17 +965,15 @@ write.csv(df_eval, 'eval_predictions.csv', row.names=F)
 
 ## References
 
-* A Modern Approach to Regression with R: Simon Sheather
-* Linear Models with R: Julian Faraway.
-* R package vignette, [mixtools: An R Package for Analyzing Finite Mixture Models](https://cran.r-project.org/web/packages/mixtools/vignettes/mixtools.pdf)
-* [7 Classic OLS assumptions](https://statisticsbyjim.com/regression/ols-linear-regression-assumptions/)
-* [Detecting Multicolinearity with VIF](https://online.stat.psu.edu/stat462/node/180/)
-* Applied Predictive Modeling: Kuhn & Johnson
+-   A Modern Approach to Regression with R: Simon Sheather
+-   Linear Models with R: Julian Faraway.
+-   R package vignette, [mixtools: An R Package for Analyzing Finite Mixture Models](https://cran.r-project.org/web/packages/mixtools/vignettes/mixtools.pdf)
+-   [7 Classic OLS assumptions](https://statisticsbyjim.com/regression/ols-linear-regression-assumptions/)
+-   [Detecting Multicolinearity with VIF](https://online.stat.psu.edu/stat462/node/180/)
+-   Applied Predictive Modeling: Kuhn & Johnson
 
 ## Appendix
 
 ### R Code
 
-```
-# Copy final R code here and hide it up above
-```
+    # Copy final R code here and hide it up above
