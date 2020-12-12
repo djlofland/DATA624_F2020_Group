@@ -70,6 +70,7 @@ library(glmnet) # for ridge
 library(doParallel)
 
 library(xgboost)
+library(gbm)
 
 #' Print a side-by-side Histogram and QQPlot of Residuals
 #'
@@ -942,13 +943,16 @@ We evaluate our eight models using three criteria: root mean squared error (RMSE
 results %>% dplyr::select(Model, RMSE, Rsquared, MAE)
 ```
 
-*Insert discussion and summary*
-
 ## 4. Model Selection & Analysis
 
 *For the model, will you use a metric such as log-likelihood, AIC, ROC curve, etc.? Using the training data set, evaluate the model based on (a) accuracy, (b) classification error rate, (c) precision, (d) sensitivity, (e) specificity, (f) F1 score, (g) AUC, and (h) confusion matrix. Make predictions using the evaluation data set.*
 
 *Insert discussion here*
+
+```{r}
+varImp(gbm_Model)
+
+```
 
 ## Predictions
 
