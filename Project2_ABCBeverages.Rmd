@@ -957,7 +957,7 @@ We apply **Model \#N** to the holdout evaluation set to predict the targets for 
 Source code: <https://github.com/djlofland/DATA624_F2020_Group/tree/master/eval_predictions.csv>
 
 ```{r, echo=F}
-predictions <- predict(model1, df_eval_transformed)
+predictions <- predict(gbm_Model, df_eval_transformed)
 df_eval$PH <- round(predictions, 2)
 
 write.csv(df_eval, 'eval_predictions.csv', row.names=F)
