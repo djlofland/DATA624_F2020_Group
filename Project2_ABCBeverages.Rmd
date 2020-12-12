@@ -70,6 +70,7 @@ library(glmnet) # for ridge
 library(doParallel)
 
 library(xgboost)
+library(gbm)
 
 #' Print a side-by-side Histogram and QQPlot of Residuals
 #'
@@ -957,7 +958,12 @@ results %>% dplyr::select(Model, RMSE, Rsquared, MAE)
 
 ## 4. Model Selection
 
-Based on evaluation both RMSE and $R^2$, our Gradient Boosted Model (GBM) out performed the other models.  This is not surprising as GBM models are more tolerant of multicollinearity and non-linear features.  
+Based on evaluation both RMSE and $R^2$, our Gradient Boosted Model (GBM) out performed the other models.  This is not surprising as GBM models are more tolerant of multicollinearity and non-linear features. 
+
+```{r}
+varImp(gbm_Model)
+
+``` 
 
 ## Predictions
 
