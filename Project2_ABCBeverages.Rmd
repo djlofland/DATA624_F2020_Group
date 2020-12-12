@@ -997,8 +997,3 @@ write.csv(df_eval, 'eval_predictions.csv', row.names=F)
 -   [Detecting Multicolinearity with VIF](https://online.stat.psu.edu/stat462/node/180/)
 -   Applied Predictive Modeling: Kuhn & Johnson
 
-## Appendix
-
-### R Code
-
-    # Copy final R code here and hide it up above
